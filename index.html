@@ -1,0 +1,904 @@
+<title>VeriMatch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Concept: a trade-night binder. Cool paper, ink navy, hobby-red action, foil-gold accents; condensed sports type for card names. */
+:root{
+  --bg:#F3F0EB; --surface:#FFFFFF; --surface2:#E9E4DB; --ink:#17141B; --muted:#6B6670; --line:#DDD6CA;
+  --hot:#17141B; --hot-ink:#EADDC8; --foil:#B8892B; --ok:#1F8A5B; --stage:#0E0C12;
+  --display:'Barlow Condensed','Arial Narrow',Impact,sans-serif; --body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121016; --surface:#1C1822; --surface2:#29232F; --ink:#F3EFE8; --muted:#A39DA9; --line:#342E3B;
+    --hot:#EADDC8; --hot-ink:#17141B; --foil:#E3B94F; --ok:#4CC38A; --stage:#08070A; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121016; --surface:#1C1822; --surface2:#29232F; --ink:#F3EFE8; --muted:#A39DA9; --line:#342E3B;
+  --hot:#EADDC8; --hot-ink:#17141B; --foil:#E3B94F; --ok:#4CC38A; --stage:#08070A; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;
+  padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px));overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--foil);outline-offset:2px}
+.app{max-width:460px;height:100%;margin:0 auto;display:flex;flex-direction:column;background:var(--bg)}
+.top{display:flex;align-items:center;justify-content:space-between;padding:6px max(8px,env(safe-area-inset-left,0px)) 0 max(8px,env(safe-area-inset-left,0px))}
+.brand{font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:.02em;text-transform:uppercase;display:flex;align-items:center}
+.brand i{display:inline-block;width:18px;height:25px;border-radius:3px;background:linear-gradient(135deg,var(--hot),var(--foil));transform:rotate(-8deg)}
+.top small{color:var(--muted);font-size:12px}
+main{flex:1;min-height:0;position:relative}
+.view{position:absolute;inset:0;display:none;flex-direction:column;padding:0 max(16px,env(safe-area-inset-left,0px)) 8px}
+.view.on{display:flex}
+.scroll{overflow-y:auto;min-height:0;flex:1;padding-bottom:12px}
+
+/* discover */
+.deck{position:relative;flex:1;min-height:0;margin-top:4px}
+.pcard{position:absolute;inset:0;border-radius:22px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;touch-action:pan-y;user-select:none;-webkit-user-select:none;box-shadow:0 8px 24px rgba(8,16,32,.14)}
+.pcard.back{transform:scale(.95) translateY(10px);opacity:.7;pointer-events:none}
+.photo{position:relative;flex:1;min-height:0;background:var(--stage);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.photo svg,.photo img.slab{height:calc(100% - 90px);max-width:calc(100% - 32px);width:auto;margin-top:6px;margin-bottom:58px;border-radius:10px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+.photo img.slab{object-fit:contain;background:#000}
+.photo .avatar{height:auto;width:min(58%,220px);aspect-ratio:1;margin-top:0;margin-bottom:40px;border-radius:50%;filter:none}
+.bars{position:absolute;top:10px;left:12px;right:12px;display:flex;gap:4px;z-index:3}
+.bars b{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.28)}
+.bars b.done{background:#fff}
+.tap{position:absolute;top:0;bottom:0;width:50%;z-index:2;background:none;border:0;padding:0}
+.tap.l{left:0}.tap.r{right:0}
+.cap{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:26px 14px 12px;background:linear-gradient(transparent,rgba(5,10,20,.88));color:#fff;pointer-events:none}
+.cap h3{margin:0;font-family:var(--display);font-weight:600;font-size:23px;letter-spacing:.01em}
+.cap p{margin:2px 0 0;font-size:12.5px;opacity:.85}
+.stamp{position:absolute;top:34px;z-index:4;font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.06em;border:4px solid;border-radius:8px;padding:0 10px;opacity:0;transform:rotate(-12deg);pointer-events:none}
+.stamp.like{left:16px;color:#4CE0A0;border-color:#4CE0A0}
+.stamp.nope{right:16px;color:#FF6B6B;border-color:#FF6B6B;transform:rotate(12deg)}
+.info{padding:12px 14px 14px;display:flex;flex-direction:column;gap:7px}
+.info .nm{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.info h2{margin:0;font-family:var(--display);font-weight:700;font-size:27px;letter-spacing:.01em}
+.info .loc{color:var(--muted);font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-right:2px}
+.chip{font-size:12.5px;padding:3px 9px;border-radius:999px;background:var(--surface2);border:1px solid var(--line)}
+.chip.want{border-color:var(--foil)}
+.actions{display:flex;justify-content:center;gap:28px;padding:12px 0 4px}
+.rb{width:62px;height:62px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;transition:transform .12s}
+.rb:active{transform:scale(.92)}
+.rb svg{width:28px;height:28px}
+.rb.no{color:var(--muted)}
+.rb.yes{background:var(--hot);border-color:var(--hot);color:var(--hot-ink)}
+.hsearch{padding:14px 16px 0}.hsearch input{width:100%;box-sizing:border-box;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px 14px;font:inherit;font-size:15px}
+.hnote{margin:10px 16px 0;padding:12px 14px;border-radius:12px;background:var(--surface2);font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;justify-content:space-between}.hnote b{color:var(--ink)}.hnote button{flex:none;border:0;border-radius:999px;background:var(--ink);color:var(--bg);font:inherit;font-weight:600;font-size:13px;padding:8px 14px;cursor:pointer}
+.hres{padding:8px 16px 16px}.hrow{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.hrow .th{width:54px;flex:none}.hrow .th svg,.hrow .th img{width:100%;height:auto;display:block;border-radius:5px}.hrow p{margin:0;font-size:13px;color:var(--muted)}.hrow p b{color:var(--ink);font-size:14px}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;color:var(--muted);padding:24px}
+.empty h2{margin:0;color:var(--ink);font-family:var(--display);font-size:28px;text-transform:uppercase}
+.btn{border:0;border-radius:12px;padding:11px 18px;background:var(--ink);color:var(--bg);font-weight:600}
+.btn.hot{background:var(--hot);color:var(--hot-ink)}
+.btn.ghost{background:var(--surface2);color:var(--ink);border:1px solid var(--line)}
+
+/* matches */
+.list{display:flex;flex-direction:column;gap:8px}
+.segs{display:flex;gap:8px;padding:6px 0 10px}.seg{flex:1;border:0;border-bottom:4px solid transparent;background:transparent;color:var(--ink);font:inherit;font-size:13.5px;padding:10px 4px 8px;border-radius:12px 12px 0 0;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
+.seg svg{width:26px;height:26px}.seg.on{background:var(--surface2);border-bottom-color:var(--ink)}.seg .new{position:absolute;top:2px;right:2px;font-size:9px;background:var(--ink);color:var(--bg);border-radius:4px;padding:1px 4px;font-weight:700}
+.sx{overflow-y:auto;flex:1;padding-bottom:12px}.srow{display:flex;gap:10px;margin:0}.srow input{flex:1;min-width:0;box-sizing:border-box;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:13px 14px;font:inherit;font-size:15px}
+.fbtn{position:relative;flex:none;width:48px;border:0;border-radius:12px;background:var(--surface);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer}.fbtn svg{width:22px;height:22px}.fbtn i{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:var(--ink);color:var(--bg);font-size:11px;font-style:normal;display:flex;align-items:center;justify-content:center}
+.savedp{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--muted);background:transparent;color:var(--muted);border-radius:999px;padding:9px 14px;font:inherit;font-size:15px;margin:10px 0 0;cursor:pointer}.savedp.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.shead{display:flex;align-items:flex-end;justify-content:space-between;padding:18px 0 8px}.shead .h{font-size:28px;margin:0;white-space:nowrap}.shead span{color:var(--muted);font-size:15px}
+.lrow{display:flex;gap:14px;padding:16px 0;border-top:1px solid var(--line);cursor:pointer;width:100%;text-align:left;background:transparent;border-left:0;border-right:0;border-bottom:0;color:var(--ink);font:inherit}.lrow .li{width:38%;flex:none}.lrow .li svg,.lrow .li img{width:100%;height:auto;display:block;border-radius:6px}
+.lrow .lt{flex:1;min-width:0}.lrow .nb{display:inline-block;background:#5BAF6A;color:#fff;font-family:var(--display);font-size:15px;border-radius:6px;padding:3px 10px;margin-bottom:8px;letter-spacing:.03em}.lrow .ln{font-size:19px;font-weight:600;line-height:1.3}.lrow .lp{font-family:var(--display);font-size:42px;margin-top:10px}
+.ptr{padding:14px 0;border-top:1px solid var(--line)}.ptr .ph{display:flex;align-items:center;gap:12px;justify-content:space-between}.ptr .ph b{font-size:18px}.ptr .ph .pa{display:flex;align-items:center;gap:10px}.ptr .ph svg{width:42px;height:42px;border-radius:50%}.ptr .ph em{font-style:normal;font-weight:600;font-size:16px}
+.pstrip{display:flex;gap:10px;margin:14px 0;align-items:center}.pstrip .pt{flex:1;position:relative;min-width:0}.pstrip svg,.pstrip img{width:100%;height:auto;display:block;border-radius:6px}.pstrip .more{position:absolute;left:4px;right:4px;bottom:6px;border:0;border-radius:8px;background:rgba(255,255,255,.94);color:#17141B;font:inherit;font-weight:700;font-size:12px;padding:6px 4px;cursor:pointer}
+.pbtns{display:flex;gap:10px}.pbtns .btn{flex:1;padding:14px 6px;font-family:var(--display);font-size:17px;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;cursor:pointer}.pbtns .teal{background:#2B6065;color:#fff}
+.frow{display:flex;justify-content:space-between;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:16px;padding:16px 2px;cursor:pointer;text-align:left}.frow span{color:var(--muted)}
+.fhead{display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:700;padding-bottom:10px;border-bottom:1px solid var(--line)}.fhead button{border:0;background:transparent;color:var(--ink);font:inherit;font-weight:400;cursor:pointer}
+.fbar{display:flex;gap:10px;padding-top:14px}.fbar .btn{flex:1;padding:14px}
+.hpost{background:var(--surface);border-radius:14px;padding:14px;margin:0 0 12px}.hpost .hh{display:flex;align-items:center;gap:10px}.hpost .hh svg{width:34px;height:34px;border-radius:50%;flex:none}.hpost .hh b{font-size:15px}.hpost .hh small{margin-left:auto;color:var(--muted)}
+.hpost .hs{display:flex;gap:10px;justify-content:center;margin:12px 0}.hpost .hs .tt{width:84px}.hpost h4{margin:4px 0;font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:.02em}.hpost p{margin:0 0 10px;color:var(--muted);font-size:14px}
+.hdark{background:#17141B;color:#F3EFE8;border-radius:14px;padding:16px;margin:0 0 12px}.hdark h4{margin:0 0 8px;font-family:var(--display);font-size:24px;text-transform:uppercase;line-height:1.1}.hdark p{margin:0 0 12px;font-size:14px;line-height:1.45;color:#d8d2c8}.hdark .btn{width:100%;background:#EDE3D3;color:#17141B}
+.hrow2{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:12px;padding:12px;margin-bottom:10px}.hrow2 .gi{width:40px;height:40px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}.hrow2 .gt{flex:1;min-width:0}.hrow2 .gt b{display:block}.hrow2 .gt span{font-size:13px;color:var(--muted)}.hrow2 .btn{padding:7px 14px;font-size:13px}
+.ev{background:var(--surface);border-radius:12px;padding:14px;margin-bottom:10px}.ev small{display:flex;justify-content:space-between;color:var(--muted);font-size:13px}.ev b{display:block;font-size:19px;margin:4px 0 2px}.ev span{font-size:13px;color:var(--muted)}
+.lb{display:flex;gap:12px;align-items:center;background:var(--surface);border-radius:12px;padding:12px;margin-bottom:8px}.lb em{font-style:normal;width:22px;text-align:center;font-weight:600}.lb svg{width:40px;height:40px;border-radius:50%}.lb div{flex:1}.lb span{color:var(--muted);font-size:13px;display:block}
+.ptabs{display:flex;border-bottom:1px solid var(--line)}.ptab{flex:1;border:0;background:transparent;color:var(--muted);padding:14px 0 12px;border-bottom:3px solid transparent;cursor:pointer;display:flex;justify-content:center}.ptab.on{color:var(--ink);border-bottom-color:var(--ink)}.ptab svg{width:24px;height:24px}
+.pbox{margin:12px 16px;padding:14px;background:var(--surface2);border-radius:12px}.pbox h5{margin:0 0 10px;font-size:16px;font-weight:500}.pbox .chips{display:flex;flex-wrap:wrap;gap:8px}.pbox .chips span{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;font-size:13px;text-transform:uppercase}
+.more3{flex:none;width:44px;height:48px;border:0;border-radius:12px;background:var(--surface2);color:var(--ink);font-size:22px;cursor:pointer}
+.asheet button{display:block;width:100%;border:0;background:var(--surface);color:var(--ink);font:inherit;font-size:16px;padding:16px;border-bottom:1px solid var(--line);cursor:pointer}.asheet .red{color:#D93A3A}.asheet .cx{margin-top:8px;border-radius:12px;font-weight:600;background:var(--ink);color:var(--bg)}
+.ld{max-width:460px;margin:0 auto;padding:0 16px 24px}.ld .big{padding:16px 10%}.ld .big svg,.ld .big img{width:100%;height:auto;display:block;border-radius:10px;box-shadow:0 10px 24px rgba(8,16,32,.25)}.ld h2{margin:6px 0 2px;font-size:22px;line-height:1.25}.ld .gr{color:var(--muted)}.ld .pr2{font-family:var(--display);font-size:34px;margin:8px 0 2px}
+.ld .by{display:flex;justify-content:space-between;align-items:center;background:var(--surface);border-radius:12px;padding:12px;margin:12px 0;cursor:pointer;width:100%;border:0;color:var(--ink);font:inherit;text-align:left}
+.ld .bar{display:flex;gap:10px;position:sticky;bottom:0;padding:12px 0;background:var(--bg)}.ld .bar .btn{flex:1;padding:14px 6px;font-family:var(--display);font-size:17px;text-transform:uppercase;letter-spacing:.03em;cursor:pointer}.ld .bar .cash{background:#F0D99A;color:#2a2112}.ld .bar .teal{background:#2B6065;color:#fff}
+#fsheet{z-index:80}
+.pcard.cslide .info>.row:nth-child(3),.pcard.cslide .info>.fit{display:none}.pcard.cslide .info>.row{flex-wrap:nowrap;overflow:hidden}.pcard.cslide .info>.row .chip:nth-child(n+5){display:none}.pcard.cslide .info .chip{white-space:nowrap}.pcard.cslide .info .lbl{white-space:nowrap}.pcard.cslide .info .loc{display:none}
+.pcard.cslide .info{gap:5px;padding:10px 14px 12px}
+.seg{white-space:nowrap;font-size:12.5px!important;padding:6px 2px 6px!important}.seg svg{width:22px!important;height:22px!important}
+.vmban{display:flex;justify-content:space-between;gap:8px;align-items:center;width:100%;border:0;background:var(--surface2);color:var(--ink);font:inherit;font-size:12.5px;padding:8px 12px;border-radius:10px;margin:0 0 8px;cursor:pointer;text-align:left}.vmban b{white-space:nowrap}
+.su h2{margin:0 0 4px;font-family:var(--display);font-size:30px;text-transform:uppercase}.su p.lead{margin:0 0 12px;color:var(--muted);font-size:14px;line-height:1.45}.su h5{margin:14px 0 8px;font-size:15px}
+.su .chips{display:flex;flex-wrap:wrap;gap:8px}.su .chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 12px;font:inherit;font-size:14px;cursor:pointer}.su .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.su .row{display:flex;gap:8px;align-items:center}.su input{flex:1;min-width:0;box-sizing:border-box;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:11px;font:inherit;font-size:15px}
+.su .fbar{position:sticky;bottom:0;background:var(--bg);padding:12px 0 2px}
+.thead{display:flex;align-items:center;justify-content:space-between;padding:4px 0 8px}
+.ttabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--line);margin:0 -4px;scrollbar-width:none}.ttabs::-webkit-scrollbar{display:none}
+.ttab{flex:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:16px;padding:14px 16px;border-bottom:3px solid transparent;cursor:pointer}.ttab.on{color:var(--ink);border-bottom-color:var(--ink)}
+.trow{display:flex;gap:12px;width:100%;text-align:left;padding:16px 0;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;cursor:pointer}
+.ticon{flex:none;width:42px;height:42px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center}.ticon svg{width:20px;height:20px}
+.tbody{flex:1;min-width:0}.ttop{display:flex;justify-content:space-between;align-items:center;gap:8px}.ttitle{font-size:17px;font-weight:500}
+.tpill{flex:none;background:#2B6065;color:#fff;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600}
+.tdate{color:var(--muted);font-size:14px;margin:4px 0 10px}
+.tbox{background:var(--surface2);border-radius:12px;padding:12px}.tlabels{display:flex;gap:70px;font-size:15px;margin-bottom:8px}
+.tcards{display:flex;align-items:center;gap:10px}.tt{width:62px;flex:none}.tt svg,.tt img{width:100%;height:auto;display:block;border-radius:4px}
+.tswap{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;flex:none}.tswap svg{width:16px;height:16px}
+.tsub{font-size:13px;color:var(--muted);margin-top:8px}
+.mrow{display:flex;gap:12px;align-items:center;padding:10px;border-radius:14px;background:var(--surface);border:1px solid var(--line);width:100%;text-align:left}
+.mrow .av{width:52px;height:52px;flex:none}
+.mrow strong{display:block}
+.mrow span{color:var(--muted);font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.h{font-family:var(--display);text-transform:uppercase;font-size:22px;font-weight:700;letter-spacing:.03em;margin:6px 0 10px}
+.chat{display:flex;flex-direction:column;flex:1;min-height:0}
+.chat .bar{display:flex;align-items:center;gap:10px;padding:4px 0 10px}
+.msgs{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding:6px 0}
+.msg{max-width:78%;padding:8px 12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);font-size:14.5px;overflow-wrap:anywhere}
+.msg.me{align-self:flex-end;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.compose{display:flex;gap:8px;padding-top:8px}
+input[type=text],input[type=number],select{width:100%;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit}
+.mini{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px}
+.mini .tn{flex:none;width:56px}
+.note{font-size:12px;color:var(--muted);margin:2px 0 8px}
+
+/* binder */
+.form{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);margin-bottom:14px}
+.form .full{grid-column:1/-1}
+.form label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:3px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 14px;padding-top:8px}
+.cell{position:relative}
+.cell svg,.cell img{width:100%;height:auto;border-radius:8px;display:block;box-shadow:0 6px 14px rgba(8,16,32,.18)}
+.cell .x{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(10,16,28,.78);color:#fff;font-size:16px;line-height:1}
+.cell .tag{position:absolute;left:6px;bottom:44px;z-index:2;background:var(--foil);color:#1B1403;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;letter-spacing:.05em}
+.cell p{margin:6px 2px 0;font-size:12.5px;color:var(--muted)}
+.cell p b{color:var(--ink)}
+
+.prof{position:fixed;inset:0;z-index:70;background:var(--bg);display:none;overflow-y:auto}.prof.on{display:block}
+.pf{max-width:460px;margin:0 auto;padding:0 0 calc(24px + env(safe-area-inset-bottom,0px))}
+.pf .top{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:2}
+.pf .top button{border:0;background:transparent;color:var(--ink);font-size:26px;line-height:1;padding:4px 8px 4px 0;cursor:pointer}
+.pf .top strong{flex:1;text-align:center;font-size:16px;margin-right:30px}
+.pf .head{display:flex;align-items:center;gap:18px;padding:18px 16px 4px}.pf .head .avatar,.pf .head svg{width:84px;height:84px;flex:none;border-radius:50%}
+.pf .stats{flex:1;display:flex;justify-content:space-around;text-align:center}.pf .stats b{display:block;font-size:20px}.pf .stats span{font-size:13px;color:var(--muted)}
+.pf .where{padding:6px 16px 0;font-size:13px;color:var(--muted)}
+.pf .acts{display:flex;gap:10px;padding:14px 16px}.pf .acts .btn{flex:1;padding:14px 6px;white-space:nowrap;font-family:var(--display);font-size:17px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer}.pf .acts .teal{background:#2B6065;color:#fff}
+.pf .sbar{padding:6px 16px 0}.pf .sbar input{width:100%;box-sizing:border-box;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:13px 14px;font:inherit;font-size:15px}
+.pf .meta{display:flex;align-items:center;gap:12px;padding:14px 16px 6px}.pf .meta b{font-family:var(--display);font-size:22px}
+.pf .sort{border:1px solid var(--muted);background:transparent;color:var(--muted);border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+.chead{padding:4px 0 6px}.csub{font-size:17px;margin-top:2px}.sbar2{margin:10px 0 0}.sbar2 input{width:100%;box-sizing:border-box;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:13px 14px;font:inherit;font-size:15px}
+.meta2{display:flex;align-items:center;gap:12px;padding:14px 0 4px}.meta2 b{font-family:var(--display);font-size:22px}.meta2 .sort{border:1px solid var(--muted);background:transparent;color:var(--muted);border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+#blist .prow{padding-left:0;padding-right:0}.tag2{font-size:10px;font-weight:700;background:var(--foil);color:#1B1403;border-radius:4px;padding:1px 5px;letter-spacing:.05em;vertical-align:middle}.x2{border:0;background:var(--surface2);color:var(--ink);width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer}
+.dt{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.dt summary{font-weight:600;cursor:pointer;padding:4px 0}
+.prow{display:flex;gap:12px;padding:14px 16px;border-top:1px solid var(--line);align-items:flex-start}.prow .th{width:58px;flex:none}.prow .th svg,.prow .th img{width:100%;height:auto;display:block;border-radius:5px}
+.prow .mid{flex:1;min-width:0;font-size:15px;line-height:1.35}.prow .mid small{display:block;color:var(--muted);font-size:13px;margin-top:3px}.prow .why2{display:inline-block;margin-top:6px;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--line)}
+.prow .pr{display:flex;flex-direction:column;align-items:flex-end;gap:8px;font-size:16px;font-weight:600}
+.prow .heart svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:2}
+.sheet{position:fixed;inset:0;z-index:60;background:rgba(10,8,14,.6);display:none;align-items:flex-end}
+.sheet.on{display:flex}
+.sheetbox{background:var(--bg);width:100%;max-width:460px;margin:0 auto;max-height:90%;overflow-y:auto;border-radius:20px 20px 0 0;padding:20px max(18px,env(safe-area-inset-left,0px)) calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px}
+.sheetbox h2{margin:0;font-family:var(--display);font-size:34px;text-transform:uppercase;letter-spacing:.02em}
+.sheetbox h3{margin:10px 0 0;font-family:var(--display);font-size:19px;text-transform:uppercase;letter-spacing:.04em}
+.sheetbox p{margin:0;line-height:1.5}
+.sheetbox .lead{font-size:16px}
+.sheetbox .fine{font-size:12px;color:var(--muted)}
+.sheetbox ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;line-height:1.45}
+.pcard.cslide .cap{padding-right:118px}.seeall{position:absolute;right:12px;left:auto;top:auto;bottom:14px;z-index:5;border:0;border-radius:999px;padding:6px 12px;background:rgba(10,8,14,.72);color:#fff;font-size:12px;font-weight:600}
+.allslide{position:absolute;z-index:5;left:0;right:0;top:46%;transform:translateY(-50%);text-align:center;color:#fff;padding:0 24px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.allslide .big{font-family:var(--display);font-weight:700;font-size:96px;line-height:1}
+.fchips{display:flex;flex-wrap:wrap;gap:6px}
+.fchip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px}
+.fchip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.agrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 14px;padding-top:6px}
+.agrid .cell svg,.agrid .cell img{width:100%;height:auto}
+.hcap{display:flex;gap:6px;align-items:flex-start;margin-top:6px}.hcap p{flex:1;min-width:0;margin:0 2px}
+.heart{flex:none;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--line,#cfc8bb);background:transparent;color:var(--ink);padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cell .heart svg,.agrid .cell .heart svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:2;box-shadow:none;border-radius:0}
+.heart.on{background:#D93A3A;border-color:#D93A3A;color:#fff}.heart.on svg{fill:#fff;stroke:#fff}
+.why{font-size:11.5px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:3px 7px;margin-top:5px}
+.chip.com{border-color:var(--ink);font-weight:600}
+/* trade fit */
+.fit{font-size:12.5px;color:var(--muted);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:6px 9px;line-height:1.5}
+.fit b{color:var(--ink);font-weight:600}
+.cstrip{display:flex;gap:8px;margin-bottom:8px}.cs{position:relative;flex:1;min-width:0}.cs svg,.cs img{width:100%;height:auto;display:block;border-radius:6px}.cs .more{position:absolute;left:4px;right:4px;bottom:6px;border:0;border-radius:8px;background:rgba(255,255,255,.94);color:#17141B;font:inherit;font-weight:700;font-size:12px;padding:6px 4px;cursor:pointer}
+.crow{display:flex;gap:8px;margin-bottom:8px}.crow .btn{flex:1}
+.tnote{display:flex;gap:10px;align-items:center;justify-content:space-between}.tnote .btn{flex:none;padding:7px 12px;font-size:13px}
+.trade{padding:10px;border-radius:14px;background:var(--surface);border:1px solid var(--line);margin-bottom:8px;display:flex;flex-direction:column;gap:6px}
+.trade .tr{display:flex;align-items:center;justify-content:center;gap:12px}
+.trade .tc{width:76px;text-align:center}
+.trade .tc svg,.trade .tc img{width:100%;height:auto;border-radius:6px;display:block;box-shadow:0 4px 10px rgba(8,16,32,.2)}
+.trade .tc span{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.trade .arrow{font-size:26px;color:var(--foil)}
+.trade .gap{text-align:center;font-weight:600;font-size:13.5px}
+.badge[hidden]{display:none}
+/* app chrome */
+.ib{width:44px;height:44px;border:0;background:none;display:grid;place-items:center;color:var(--ink);border-radius:10px}
+.ib svg{width:26px;height:26px}
+.new{font-family:var(--body);font-size:10px;font-weight:700;letter-spacing:.06em;background:var(--ink);color:var(--bg);border-radius:4px;padding:2px 5px;margin-left:8px;vertical-align:middle}
+.concept{text-align:center;font-size:11px;color:var(--muted);padding:0 16px 6px}
+nav button .new{position:absolute;top:0;left:calc(50% + 12px);margin:0;font-size:8px;padding:1px 4px}
+nav button.on::after{content:"";position:absolute;bottom:-6px;left:20%;right:20%;height:3px;border-radius:2px;background:var(--ink)}
+nav button.plus{flex:none;width:64px;height:48px;align-self:center;background:var(--ink);color:var(--bg);border-radius:12px;margin:0 6px;padding:0;justify-content:center}
+nav button.plus svg{width:28px;height:28px}
+/* tabbar */
+nav{display:flex;border-top:1px solid var(--line);background:var(--surface);padding:6px max(8px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px));}
+nav button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;color:var(--muted);font-size:12px;position:relative;border-radius:10px}
+nav button svg{width:24px;height:24px}
+nav button.on{color:var(--ink);font-weight:600}
+nav button.on svg{color:var(--hot)}
+.badge{position:absolute;top:2px;left:calc(50% + 8px);min-width:18px;height:18px;border-radius:9px;background:var(--hot);color:var(--hot-ink);font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+
+/* match overlay */
+.ov{position:fixed;inset:0;z-index:50;background:rgba(6,12,24,.82);display:none;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff}
+.ov.on{display:flex}
+.ov .box{max-width:340px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.ov h2{margin:0;font-family:var(--display);font-size:54px;text-transform:uppercase;letter-spacing:.04em;color:var(--foil);line-height:1}
+.ov .pair{display:flex;gap:10px;align-items:center}
+.ov .pair svg{width:90px;height:90px;border-radius:50%}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-height:760px){.concept{display:none}.vmban{display:none}}
+@media (max-height:640px){.rb{width:52px;height:52px}.actions{padding:8px 0 2px}}
+</style>
+
+<div class="app">
+  <header class="top"><button class="ib" id="menu" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div class="brand" aria-hidden="true"></div><button class="ib" id="chatbtn" aria-label="Messages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg></button></header>
+  <div class="concept">Concept mockup · sample data · tap the menu icon for the pitch</div>
+  <main>
+    <section class="view" id="v-search"></section>
+    <section class="view on" id="v-discover">
+      <div class="segs" id="segsvm"></div>
+      <button class="vmban" id="vmban"></button>
+      <div class="deck" id="deck"></div>
+      <div class="actions" id="actions">
+        <button class="rb no" id="btnNo" aria-label="Pass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <button class="rb yes" id="btnYes" aria-label="Like"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      </div>
+    </section>
+    <section class="view" id="v-home"></section>
+    <section class="view" id="v-matches"></section>
+    <section class="view" id="v-binder"></section>
+  </main>
+  <nav>
+    <button data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>Home</button>
+    <button data-tab="discover" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search</button>
+    <button class="plus" data-tab="binder" data-add="1" aria-label="Add a card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button data-tab="matches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13l-3-3M20 15H7l3 3"/></svg>Trades<span class="badge" id="badge" hidden>0</span></button>
+    <button data-tab="binder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 012-2h11v16H6a2 2 0 01-2-2z"/><path d="M8 4v16"/></svg>Collection</button>
+  </nav>
+</div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="About this concept"><div class="sheetbox">
+  <h2>VeriMatch</h2>
+  <p class="lead">Search works when you already know the card you want. VeriMatch helps when you don’t: it starts from a person, finds shared players and teams, then suggests a trade that works for both sides.</p>
+  <h3>How it plugs in</h3>
+  <ul>
+   <li><b>Collection:</b> uses the cards collectors have already added. Nothing new to enter.</li>
+   <li><b>Wish list:</b> what each side wants drives the trade fit. Players and teams they follow are optional.</li>
+   <li><b>Trades:</b> a match ends in a suggested offer that opens the existing offer flow with cards and cash prefilled. Verification and shipping stay exactly as they are.</li>
+  </ul>
+  <h3>Why it should lift engagement</h3>
+  <ul>
+   <li>A quick daily swipe gives collectors a reason to open the app between trades.</li>
+   <li>A match starts a conversation before an offer, so more traders turn into trade partners.</li>
+   <li>Cards that never get searched get seen by the people most likely to want them.</li>
+   <li>It pairs with Trade Night: see who shares your interests before the event.</li>
+  </ul>
+  <h3>What I would measure</h3>
+  <p>Matches per session, match to offer rate, offer to completed trade rate, 7-day return rate, and trades per active collector. These are hypotheses to test, not results.</p>
+  <p class="fine">© 2026 John Alexandre. All rights reserved. VeriMatch concept by John Alexandre.</p>
+  <p class="fine">Built as a concept with sample collectors and illustrative values. A real version needs each collector’s Collection and wish list from the app.</p>
+  <button class="btn hot" id="sheetClose" style="width:100%">Back to the demo</button>
+</div></div>
+<div class="sheet" id="fsheet" role="dialog" aria-modal="true" aria-label="Sort and filter"><div class="sheetbox" id="fbox"></div></div>
+<div class="prof" id="prof" role="dialog" aria-modal="true" aria-label="Collector profile"></div>
+<div class="sheet" id="all" role="dialog" aria-modal="true" aria-label="Collection"><div class="sheetbox" id="allbox"></div></div>
+<div class="ov" id="ov" role="dialog" aria-modal="true" aria-label="New match"><div class="box" id="ovbox"></div></div>
+
+<script>
+(function(){
+var KEY='binder-match-v9';
+var TEAMS={
+  baseball:{'NY Yankees':['#0C2340','#C4CED3'],'LA Dodgers':['#005A9C','#EF3E42'],'LA Angels':['#BA0021','#003263'],'Seattle Mariners':['#0C2C56','#00A3B5'],'San Diego Padres':['#2F241D','#FFC425'],'Boston Red Sox':['#BD3039','#0C2340'],'NY Mets':['#002D72','#FF5910']},
+  basketball:{'LA Lakers':['#552583','#FDB927'],'Boston Celtics':['#007A33','#E9F2EA'],'Dallas Mavericks':['#00538C','#B8C4CA'],'San Antonio Spurs':['#1A1A1A','#C4CED4'],'Indiana Fever':['#002D62','#E03A3E'],'Minnesota Timberwolves':['#0C2340','#78BE20'],'Oklahoma City Thunder':['#007AC1','#EF3B24'],'Chicago Bulls':['#CE1141','#15171C']},
+  football:{'Dallas Cowboys':['#003594','#869397'],'Philadelphia Eagles':['#004C54','#A5ACAF'],'Kansas City Chiefs':['#E31837','#FFB81C'],'Houston Texans':['#03202F','#A71930'],'Cincinnati Bengals':['#FB4F14','#15171C'],'Minnesota Vikings':['#4F2683','#FFC62F'],'Chicago Bears':['#0B162A','#C83803']},
+  hockey:{'Chicago Blackhawks':['#CF0A2C','#15171C'],'Boston Bruins':['#1A1A1A','#FFB81C'],'Edmonton Oilers':['#041E42','#FF4C00'],'Colorado Avalanche':['#6F263D','#236192'],'Washington Capitals':['#041E42','#C8102E']},
+  soccer:{'Inter Miami':['#231F20','#F7B5CD'],'Borussia Dortmund':['#1A1A1A','#FDE100'],'Paris Saint-Germain':['#004170','#DA291C'],'Real Madrid':['#EBEBEB','#FEBE10'],'FC Barcelona':['#004D98','#A50044']}
+};
+var SPORTS=['baseball','basketball','football','hockey','soccer'];
+function C(player,sport,team,year,set,num,grade,fx,est){return {player:player,sport:sport,team:team,year:year,set:set,num:num,grade:grade,fx:fx,est:est};}
+var PEOPLE=[
+ {id:'maya',name:'Maya R.',city:'Brooklyn, NY',c1:'#8E3FD0',c2:'#F2C14E',likesYou:true,
+  focus:['Basketball','Prizm & Chrome'],wants:['Boston Celtics','Silver parallels'],
+  cards:[C('Kobe Bryant','basketball','LA Lakers',1996,'Topps Chrome',8,'9','silver',2400),C('LeBron James','basketball','LA Lakers',2018,'Panini Prizm',23,'10','silver',45),C('Victor Wembanyama','basketball','San Antonio Spurs',2023,'Panini Prizm',1,'10','holo',480),C('Luka Don\u010di\u0107','basketball','Dallas Mavericks',2018,'Panini Prizm',77,'10','silver',520),C('Anthony Edwards','basketball','Minnesota Timberwolves',2020,'Panini Prizm',258,'10','silver',260),C('Michael Jordan','basketball','Chicago Bulls',1986,'Fleer',57,'8','base',9000),C('Stephen Curry','basketball','Golden State Warriors',2009,'Topps Chrome',101,'9','silver',900)]},
+ {id:'dev',name:'Dev P.',city:'Austin, TX',c1:'#C2552B',c2:'#14284B',likesYou:false,
+  focus:['Baseball','Rookie cards'],wants:['NY Yankees','Complete 2019 set'],
+  cards:[C('Shohei Ohtani','baseball','LA Angels',2018,'Topps Update',17,'10','silver',410),C('Ken Griffey Jr.','baseball','Seattle Mariners',1989,'Upper Deck',24,'9','base',260),C('Julio Rodr\u00edguez','baseball','Seattle Mariners',2022,'Topps Chrome',44,'10','silver',120),C('Fernando Tatis Jr.','baseball','San Diego Padres',2019,'Topps Chrome',23,'9.5','silver',85),C('Mike Trout','baseball','LA Angels',2011,'Topps Update',175,'9','base',1200),C('Derek Jeter','baseball','NY Yankees',1993,'SP Foil',279,'9','holo',900)]},
+ {id:'tomas',name:'Tom\u00e1s L.',city:'Miami, FL',c1:'#1A3E8C',c2:'#F2C316',likesYou:true,
+  focus:['Soccer','Basketball'],wants:['LA Lakers','Any 1-of-1'],
+  cards:[C('Lionel Messi','soccer','Inter Miami',2023,'Topps Chrome MLS',10,'9.5','holo',210),C('Erling Haaland','soccer','Borussia Dortmund',2019,'Topps Chrome UCL',17,'9','silver',320),C('Luis Su\u00e1rez','soccer','Inter Miami',2023,'Topps Chrome MLS',9,'9','silver',40),C('Kylian Mbapp\u00e9','soccer','Paris Saint-Germain',2018,'Topps Chrome UCL',29,'9.5','holo',380),C('Jude Bellingham','soccer','Real Madrid',2023,'Topps Chrome UCL',5,'10','silver',240),C('Lamine Yamal','soccer','FC Barcelona',2024,'Topps Chrome UCL',19,'10','holo',300)]},
+ {id:'jordan',name:'Jordan K.',city:'Chicago, IL',c1:'#A11A25',c2:'#15171C',likesYou:true,
+  focus:['Hockey','Young Guns'],wants:['Chicago Blackhawks','Silver parallels'],
+  cards:[C('Connor Bedard','hockey','Chicago Blackhawks',2023,'Upper Deck Young Guns',98,'9.5','holo',340),C('Connor McDavid','hockey','Edmonton Oilers',2015,'Upper Deck Young Guns',97,'9','holo',1100),C('David Pastr\u0148\u00e1k','hockey','Boston Bruins',2014,'Upper Deck Young Guns',88,'9','silver',160),C('Cale Makar','hockey','Colorado Avalanche',2019,'Upper Deck Young Guns',8,'9.5','holo',170),C('Alex Ovechkin','hockey','Washington Capitals',2005,'Upper Deck Young Guns',443,'9','holo',700),C('Nathan MacKinnon','hockey','Colorado Avalanche',2013,'Upper Deck Young Guns',201,'9.5','holo',450),C('Auston Matthews','hockey','Toronto Maple Leafs',2016,'Upper Deck Young Guns',201,'9','holo',420)]},
+ {id:'priya',name:'Priya S.',city:'Seattle, WA',c1:'#1B3F8F',c2:'#27B3A8',likesYou:false,
+  focus:['Football','Prizm rookies'],wants:['Boston Celtics','Numbered cards'],
+  cards:[C('Patrick Mahomes','football','Kansas City Chiefs',2017,'Panini Prizm',15,'9','silver',420),C('C.J. Stroud','football','Houston Texans',2023,'Panini Prizm',7,'10','silver',150),C('Dak Prescott','football','Dallas Cowboys',2016,'Panini Prizm',4,'9.5','silver',180),C('Carson Wentz','football','Philadelphia Eagles',2016,'Panini Prizm',11,'9','silver',35),C('Joe Burrow','football','Cincinnati Bengals',2020,'Panini Prizm',307,'10','silver',310),C('Justin Jefferson','football','Minnesota Vikings',2020,'Panini Prizm',398,'10','silver',260),C('Josh Allen','football','Buffalo Bills',2018,'Panini Prizm',205,'9','silver',380)]},
+ {id:'eli',name:'Eli W.',city:'Portland, ME',c1:'#14284B',c2:'#2B6FA8',likesYou:true,
+  focus:['Baseball','Basketball'],wants:['LA Dodgers','Boston Bruins'],
+  cards:[C('Aaron Judge','baseball','NY Yankees',2017,'Topps Series 1',99,'9','base',75),C('Jayson Tatum','basketball','Boston Celtics',2017,'Panini Prizm',0,'9','silver',140),C('Mookie Betts','baseball','Boston Red Sox',2014,'Topps Update',50,'9','base',60),C('Larry Bird','basketball','Boston Celtics',1986,'Fleer',9,'8','base',5000),C('Bobby Orr','hockey','Boston Bruins',1966,'Topps',35,'8','base',2200),C('Juan Soto','baseball','NY Mets',2018,'Topps Update',300,'9.5','silver',210),C('Cooper Flagg','basketball','Dallas Mavericks',2025,'Topps Chrome',1,'10','silver',240),C('Connor Bedard','hockey','Chicago Blackhawks',2023,'Upper Deck Young Guns',201,'9','holo',300)]}
+];
+var FAV={
+ maya:{players:['Kobe Bryant','Jayson Tatum'],teams:['Boston Celtics','LA Lakers']},
+ dev:{players:['Shohei Ohtani','Ken Griffey Jr.'],teams:['Seattle Mariners','NY Yankees']},
+ tomas:{players:['Lionel Messi','Erling Haaland'],teams:['Inter Miami','LA Lakers']},
+ jordan:{players:['Connor Bedard','Connor McDavid'],teams:['Chicago Blackhawks','Boston Bruins']},
+ priya:{players:['Patrick Mahomes','Jayson Tatum'],teams:['Kansas City Chiefs','Boston Celtics']},
+ eli:{players:['Aaron Judge','Shohei Ohtani'],teams:['NY Yankees','Boston Red Sox']}
+};
+var TOTAL={maya:312,dev:187,tomas:94,jordan:428,priya:156,eli:73};
+var SAMPLE_MINE=[
+  {id:'s1',sample:true,player:'Jaylen Brown',sport:'basketball',team:'Boston Celtics',year:2016,set:'Panini Prizm',num:7,grade:'9',fx:'silver',est:60},
+  {id:'s2',sample:true,player:'Patrick Kane',sport:'hockey',team:'Chicago Blackhawks',year:2007,set:'Upper Deck Young Guns',num:88,grade:'9',fx:'holo',est:350},
+  {id:'s3',sample:true,player:'Gleyber Torres',sport:'baseball',team:'NY Yankees',year:2018,set:'Topps Update',num:25,grade:'8.5',fx:'base',est:30}
+];
+
+/* state */
+var S={prefs:{done:false,sports:[],teams:[],players:[],brands:[],min:'',max:''},liked:[],passed:[],matches:[],chats:{},mine:SAMPLE_MINE.slice(),seen:{},wants:['LA Lakers','Inter Miami','Boston Bruins','NY Yankees'],interest:['Shohei Ohtani|2018|Topps Update','Lionel Messi|2023|Topps Chrome MLS','Connor Bedard|2023|Upper Deck Young Guns','Kobe Bryant|1996|Topps Chrome'],likes:{players:['Shohei Ohtani','Lionel Messi','Connor Bedard','Jayson Tatum'],teams:['LA Lakers','NY Yankees','Boston Bruins']}};
+try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&typeof p==='object')S=Object.assign(S,p);}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function $(s,r){return (r||document).querySelector(s);}
+function esc(t){var d=document.createElement('div');d.textContent=String(t==null?'':t);return d.innerHTML;}
+function byId(id){for(var i=0;i<PEOPLE.length;i++)if(PEOPLE[i].id===id)return PEOPLE[i];return null;}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function gl(g){g=String(g);if(/[a-z]/i.test(g))return g;var m={'10':'PSA 10','9.5':'BGS 9.5','9':'PSA 9','8.5':'BGS 8.5','8':'PSA 8'};return m[g]||g;}
+function badge(c){
+  var L=gl(c.grade),pr=L.split(' '),f='font-family="Inter,Arial,sans-serif" font-weight="700" fill="#1B1403" text-anchor="middle"';
+  var t=pr.length>1?'<text x="205" y="256" '+f+' font-size="8" letter-spacing=".6">'+esc(pr[0])+'</text><text x="205" y="272" '+f+' font-size="16">'+esc(pr.slice(1).join(' '))+'</text>':'<text x="205" y="266" '+f+' font-size="13">'+esc(L)+'</text>';
+  return '<g><rect x="176" y="246" width="58" height="30" rx="6" fill="#C99A2E"/>'+t+'</g>';
+}
+function uniq(a){var o={},r=[];a.forEach(function(x){var k=String(x).toLowerCase();if(!o[k]){o[k]=1;r.push(x);}});return r;}
+function interests(cards,likes){var pl=(likes.players||[]).slice(),tm=(likes.teams||[]).slice(),sp=[];cards.forEach(function(c){pl.push(c.player);tm.push(c.team);sp.push(cap(c.sport));});return {players:uniq(pl),teams:uniq(tm),sports:uniq(sp)};}
+function inter(x,y){var ys=y.map(function(z){return String(z).toLowerCase();});return x.filter(function(v){return ys.indexOf(String(v).toLowerCase())>=0;});}
+function common(p){
+  var A=interests(S.mine,S.likes||{}),B=interests(p.cards,FAV[p.id]||{});
+  var P=S.prefs||{};
+  A.players=uniq(A.players.concat(P.players||[]));A.teams=uniq(A.teams.concat(P.teams||[]));A.sports=uniq(A.sports.concat((P.sports||[]).map(cap)));
+  var pl=inter(A.players,B.players),tm=inter(A.teams,B.teams),sp=inter(A.sports,B.sports);
+  var br=inter(P.brands||[],uniq(p.cards.map(mfrOf))),pf=0;
+  if(P.min!==''||P.max!==''){pf=p.cards.filter(function(c){return (P.min===''||c.est>=+P.min)&&(P.max===''||c.est<=+P.max);}).length;}
+  return {players:pl,teams:tm,sports:sp,brands:br,priceFit:pf,items:pl.concat(tm,sp,br),score:pl.length*3+tm.length*2+sp.length+br.length+Math.min(pf,3)};
+}
+function lc(x){return String(x).toLowerCase();}
+function ck(c){return c.player+'|'+c.year+'|'+c.set;}
+function isLiked(c){return (S.interest||[]).indexOf(ck(c))>=0;}
+function total(p){return TOTAL[p.id]||p.cards.length;}
+function why(c){
+  var r=[],L=S.likes||{},pl=(L.players||[]).map(lc),tm=(L.teams||[]).map(lc);
+  if(onList(c))r.push('On your wish list');
+  if(pl.indexOf(lc(c.player))>=0)r.push('You follow '+c.player);
+  else if(tm.indexOf(lc(c.team))>=0)r.push('You follow '+c.team);
+  if(isLiked(c))r.push('You showed interest');
+  else if((S.interest||[]).some(function(k){return k.split('|')[0]===c.player;}))r.push('Same player as a card you liked');
+  if(S.mine.some(function(m){return m.team===c.team;}))r.push('Same team as your collection');
+  return r;
+}
+function ordered(p){return p.cards.slice().sort(function(a,b){return (why(b).length-why(a).length)||(b.est-a.est);}).slice(0,6);}
+function cm(c,w){w=String(w).toLowerCase();return w.indexOf(String(c.team).toLowerCase())>=0||(c.fx==='silver'&&w.indexOf('silver')>=0)||(c.fx==='holo'&&w.indexOf('holo')>=0)||w.indexOf(String(c.year))>=0;}
+function onList(c){return (S.wants||[]).some(function(w){return cm(c,w);});}
+function fit(p){
+  var give=S.mine.filter(function(c){return p.wants.some(function(w){return cm(c,w);});});
+  var get=p.cards.filter(onList);
+  return {give:give,get:get,score:give.length+get.length+(give.length&&get.length?3:0)};
+}
+function tradeIdea(p){
+  var f=fit(p),G=f.give.length?f.give:S.mine,R=f.get.length?f.get:p.cards,best=null;
+  G.forEach(function(g){R.forEach(function(r){var d=Math.abs(g.est-r.est);if(!best||d<best.d)best={g:g,r:r,d:d};});});
+  return best;
+}
+
+/* art */
+var gid=0;
+function teamColors(c){var t=(TEAMS[c.sport]||{})[c.team];return t||['#2B3A55','#C9D3E0'];}
+function cardSVG(c){
+  var n=++gid,col=teamColors(c),a=col[0],b=col[1];
+  var holo=c.fx==='holo',silver=c.fx==='silver';
+  var s='<svg viewBox="0 0 250 350" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+esc(c.player+' '+c.year+' '+c.set)+'">'+
+  '<defs><linearGradient id="g'+n+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+a+'"/><stop offset="1" stop-color="'+b+'" stop-opacity=".95"/></linearGradient>'+
+  '<linearGradient id="h'+n+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5fa2" stop-opacity=".0"/><stop offset=".3" stop-color="#ffd86b" stop-opacity=".45"/><stop offset=".55" stop-color="#6bffd0" stop-opacity=".4"/><stop offset=".8" stop-color="#7a8bff" stop-opacity=".4"/><stop offset="1" stop-color="#ff5fa2" stop-opacity="0"/></linearGradient>'+
+  '<clipPath id="k'+n+'"><rect x="8" y="8" width="234" height="334" rx="12"/></clipPath></defs>'+
+  '<rect width="250" height="350" rx="16" fill="#F4F1E6"/>'+
+  '<g clip-path="url(#k'+n+')"><rect x="8" y="8" width="234" height="334" fill="url(#g'+n+')"/>'+
+  '<text x="236" y="250" text-anchor="end" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="190" fill="#fff" fill-opacity=".16">'+esc(c.num)+'</text>'+
+  '<circle cx="125" cy="150" r="30" fill="#fff" fill-opacity=".2"/><path d="M62 276Q68 202 125 196Q182 202 188 276Z" fill="#fff" fill-opacity=".2"/>';
+  if(holo)s+='<rect x="8" y="8" width="234" height="334" fill="url(#h'+n+')"/>';
+  if(holo||silver)for(var i=0;i<9;i++)s+='<path d="M'+(-20+i*34)+' 350L'+(60+i*34)+' 0" stroke="#fff" stroke-opacity="'+(holo?.09:.07)+'" stroke-width="9"/>';
+  s+='<rect x="8" y="270" width="234" height="72" fill="#0B1424" fill-opacity=".72"/>'+
+  '<text x="20" y="302" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="'+(c.player.length>15?20:c.player.length>12?24:c.player.length>10?27:30)+'" fill="#fff" letter-spacing=".5">'+esc(c.player.toUpperCase())+'</text>'+
+  '<text x="20" y="324" font-family="Inter,sans-serif" font-size="'+((c.team+c.set).length>32?9.5:10.5)+'" fill="#fff" fill-opacity=".85">'+esc(c.team+' · '+c.set)+'</text>'+
+  '<text x="20" y="34" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="600" font-size="16" fill="#fff" letter-spacing="1.5">'+esc(String(c.sport).toUpperCase())+'</text>'+
+  '<text x="230" y="34" text-anchor="end" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="600" font-size="16" fill="#fff" letter-spacing="1">'+esc(c.year)+'</text></g>'+
+  '<rect x="8" y="8" width="234" height="334" rx="12" fill="none" stroke="#C99A2E" stroke-opacity=".9" stroke-width="2"/>'+
+  badge(c)+'</svg>';
+  return s;
+}
+function avatarSVG(p){
+  var n=++gid,ini=p.name.split(' ').map(function(w){return w.charAt(0);}).join('');
+  return '<svg class="avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+esc(p.name)+' profile photo"><defs><linearGradient id="a'+n+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+p.c1+'"/><stop offset="1" stop-color="'+p.c2+'"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#a'+n+')"/><text x="50" y="62" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="700" font-size="42" fill="#fff">'+esc(ini)+'</text></svg>';
+}
+function cardHTML(c){return c.img?'<img src="'+c.img+'" alt="'+esc(c.player)+'">':cardSVG(c);}
+
+/* discover */
+var deckPeople=[];
+function rebuildDeck(){deckPeople=PEOPLE.filter(function(p){return S.liked.indexOf(p.id)<0&&S.passed.indexOf(p.id)<0;}).sort(function(a,b){return (common(b).score-common(a).score)||(fit(b).score-fit(a).score);});}
+function renderDeck(){
+  var deck=$('#deck');deck.innerHTML='';
+  var acts=$('#actions');
+  if(!deckPeople.length){
+    acts.style.display='none';
+    deck.innerHTML='<div class="empty"><h2>You’re caught up</h2><div>You’ve gone through all the demo collectors. New people would appear here as they join.</div><button class="btn hot" id="again">Start over</button></div>';
+    $('#again').onclick=function(){S.liked=[];S.passed=[];S.matches=[];S.chats={};save();rebuildDeck();renderDeck();renderTabs();};
+    return;
+  }
+  acts.style.display='flex';
+  if(deckPeople[1])deck.appendChild(buildCard(deckPeople[1],true));
+  deck.appendChild(buildCard(deckPeople[0],false));
+}
+function buildCard(p,back){
+  var el=document.createElement('div');el.className='pcard'+(back?' back':'');el.dataset.id=p.id;
+  var cards=ordered(p),slides=cards.length+2,idx=0;
+  var wants=p.wants.map(function(w){return '<span class="chip want">'+esc(w)+'</span>';}).join('');
+  var focus=p.focus.map(function(w){return '<span class="chip">'+esc(w)+'</span>';}).join('');
+  var co=common(p),coItems=co.items.slice(0,5);
+  var commonRow='<div class="row"><span class="lbl">In common</span>'+(coItems.length?coItems.map(function(x){return '<span class="chip com">'+esc(x)+'</span>';}).join(''):'<span class="chip">No overlap yet</span>')+'</div>';
+  var f=fit(p);
+  var fitRow='<div class="fit"><span class="lbl">Trade fit</span><b>'+(f.give.length?f.give.length+' of yours they want':'none of yours they want yet')+'</b> \u00B7 <b>'+(f.get.length?f.get.length+' of theirs on your list':'none of theirs on your list')+'</b></div>';
+  el.innerHTML='<div class="photo"><div class="bars"></div><div class="stage"></div><div class="cap"></div>'+
+   '<span class="stamp like">TRADE</span><span class="stamp nope">PASS</span>'+
+   '<button class="tap l" aria-label="Previous card"></button><button class="tap r" aria-label="Next card"></button></div>'+
+   '<div class="info"><div class="nm"><h2>'+esc(p.name)+'</h2><span class="loc">'+esc(p.city+' \u00B7 '+total(p)+' cards')+'</span></div>'+
+   commonRow+
+   '<div class="row"><span class="lbl">Looking for</span>'+wants+'</div>'+fitRow+'</div>';
+  function show(){
+    var bars='';for(var i=0;i<slides;i++)bars+='<b class="'+(i<=idx?'done':'')+'"></b>';
+    $('.bars',el).innerHTML=bars;
+    var st=$('.stage',el),cp=$('.cap',el);
+    if(idx===0){st.innerHTML=avatarSVG(p);cp.innerHTML='<h3>'+esc(p.name)+'</h3><p>Tap right for '+cards.length+' cards picked for you, from '+total(p)+' in their collection</p>';}
+    else if(idx===cards.length+1){st.innerHTML='<div class="allslide"><div class="big">'+total(p)+'</div><div>cards in their collection</div><button class="btn" id="allgo">See what fits you</button></div>';cp.innerHTML='<h3>Full collection</h3><p>Picked for you, your interests, or everything</p>';var ag=$('#allgo',el);if(ag)ag.onclick=function(ev){ev.stopPropagation();openAll(p);};}
+    else{var c=cards[idx-1];st.innerHTML=cardHTML(c)+'<button class="seeall" id="seeall">Collection \u00B7 '+total(p)+'</button>';var sb=$('#seeall',el);if(sb)sb.onclick=function(ev){ev.stopPropagation();openAll(p);};cp.innerHTML='<h3>'+esc(c.player)+'</h3><p>'+esc(c.year+' '+c.set+' · '+gl(c.grade)+' · $'+c.est)+(why(c).length?' · <b style="color:#F2C14E">'+esc(why(c)[0])+'</b>':'')+'</p>';}
+    el.classList.toggle('cslide',idx>0&&idx<=cards.length);
+    st.style.display='contents';
+  }
+  function go(d){var n=idx+d;if(n<0||n>=slides)return;idx=n;show();}
+  $('.tap.r',el).onclick=function(){go(1);};
+  $('.tap.l',el).onclick=function(){go(-1);};
+  show();
+  if(!back)attachDrag(el,p);
+  return el;
+}
+function attachDrag(el,p){
+  var sx=0,sy=0,dx=0,drag=false,moved=false,pid=null;
+  var like=$('.stamp.like',el),nope=$('.stamp.nope',el);
+  el.addEventListener('pointerdown',function(e){if(e.target.closest('.rb'))return;drag=true;moved=false;sx=e.clientX;sy=e.clientY;dx=0;pid=e.pointerId;});
+  el.addEventListener('pointermove',function(e){
+    if(!drag)return;dx=e.clientX-sx;var dy=e.clientY-sy;
+    if(!moved&&Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)){moved=true;try{el.setPointerCapture(pid);}catch(x){}}
+    if(moved){el.style.transition='none';el.style.transform='translateX('+dx+'px) rotate('+(dx/22)+'deg)';
+      like.style.opacity=Math.min(1,Math.max(0,dx/90));nope.style.opacity=Math.min(1,Math.max(0,-dx/90));}
+  });
+  function end(){
+    if(!drag)return;drag=false;
+    if(moved){
+      if(dx>90){decide(p,true);return;}
+      if(dx<-90){decide(p,false);return;}
+      el.style.transition='transform .2s';el.style.transform='';like.style.opacity=0;nope.style.opacity=0;
+    }
+  }
+  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+  el.addEventListener('click',function(e){if(moved){e.stopPropagation();e.preventDefault();moved=false;}},true);
+}
+function decide(p,yes){
+  var el=$('.pcard:not(.back)',$('#deck'));
+  if(el){el.style.transition='transform .25s,opacity .25s';el.style.transform='translateX('+(yes?520:-520)+'px) rotate('+(yes?24:-24)+'deg)';el.style.opacity='0';}
+  setTimeout(function(){
+    if(yes){S.liked.push(p.id);if(p.likesYou&&S.matches.indexOf(p.id)<0){S.matches.push(p.id);S.chats[p.id]=[];S.at=S.at||{};S.at[p.id]=Date.now();showMatch(p);}}
+    else S.passed.push(p.id);
+    save();rebuildDeck();renderDeck();renderTabs();
+  },230);
+}
+$('#btnYes').onclick=function(){if(deckPeople[0])decide(deckPeople[0],true);};
+$('#btnNo').onclick=function(){if(deckPeople[0])decide(deckPeople[0],false);};
+
+/* match overlay */
+function openAllOld(p){
+  var sh=$('#all'),box=$('#allbox'),q='',seg='pick';
+  var base=p.cards.slice().sort(function(a,b){return (why(b).length-why(a).length)||(b.est-a.est);});
+  function draw(keep){
+    var list=base.filter(function(c){
+      if(seg==='pick'&&!why(c).length)return false;
+      if(seg==='liked'&&!isLiked(c))return false;
+      var t=lc(c.player+' '+c.team+' '+c.set+' '+c.year);return !q||t.indexOf(q)>=0;});
+    var nPick=base.filter(function(c){return why(c).length;}).length,nLiked=base.filter(isLiked).length;
+    var segs=[['pick','Picked for you ('+nPick+')'],['liked','Interested ('+nLiked+')'],['all','All ('+total(p)+')']].map(function(k){return '<button class="fchip'+(seg===k[0]?' on':'')+'" data-k="'+k[0]+'">'+esc(k[1])+'</button>';}).join('');
+    var empty=seg==='liked'?'You haven\u2019t shown interest in any of their cards yet. Tap the heart on a card to save it.':'No cards match.';
+    if(seg==='all'){list=base.filter(function(c){var t=lc(c.player+' '+c.team+' '+c.set+' '+c.year);return !q||t.indexOf(q)>=0;});}
+    box.innerHTML='<h2>'+esc(p.name)+'\u2019s collection</h2><p class="fine">Picked for you uses your wish list, the players and teams you follow, and cards you have liked before.</p><input type="text" id="aq" placeholder="Search player, team or set" value="'+esc(q)+'" aria-label="Search this collection"><div class="fchips">'+segs+'</div><div class="agrid">'+
+      (list.length?list.map(function(c){var w=why(c);return '<div class="cell">'+cardHTML(c)+'<div class="hcap"><p><b>'+esc(c.player)+'</b><br>'+esc(c.year+' \u00B7 '+c.set+' \u00B7 '+gl(c.grade))+'</p><button class="heart'+(isLiked(c)?' on':'')+'" data-i="'+base.indexOf(c)+'" aria-label="Show interest" aria-pressed="'+(isLiked(c)?'true':'false')+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button></div>'+(w.length?'<div class="why">'+esc(w.slice(0,2).join(' \u00B7 '))+'</div>':'')+'</div>';}).join(''):'<p class="fine" style="grid-column:1/-1">'+empty+'</p>')+
+      '</div><p class="fine">Demo data: this prototype includes only '+base.length+' of '+total(p)+' cards.</p><button class="btn hot" id="allClose" style="width:100%">Back to the deck</button>';
+    Array.prototype.forEach.call(box.querySelectorAll('.fchip'),function(b){b.onclick=function(){seg=b.dataset.k;draw();};});
+    Array.prototype.forEach.call(box.querySelectorAll('.heart'),function(b){b.onclick=function(){var c=base[+b.dataset.i],k=ck(c),a=S.interest=S.interest||[],j=a.indexOf(k);if(j>=0)a.splice(j,1);else a.push(k);save();draw();};});
+    $('#allClose').onclick=function(){sh.classList.remove('on');};
+    $('#aq').oninput=function(){q=lc(this.value);draw(true);};
+    if(keep){var i=$('#aq');i.focus();i.setSelectionRange(i.value.length,i.value.length);}
+  }
+  draw();sh.classList.add('on');box.scrollTop=0;
+  sh.onclick=function(e){if(e.target===sh)sh.classList.remove('on');};
+}
+function updBanner(){
+  var P=S.prefs||{},n=(P.sports||[]).length+(P.teams||[]).length+(P.players||[]).length+(P.brands||[]).length;
+  var b=$('#vmban');if(!b)return;
+  b.innerHTML='<span>'+(n?'Matches use your '+n+' interests and collection.':'Set your interests for better matches.')+'</span><b>'+(n?'Edit':'Set up')+' \u203A</b>';
+  b.onclick=openSetup;
+}
+function openSetup(){
+  var sh=$('#fsheet'),box=$('#fbox'),P=S.prefs||{},D={done:true,sports:(P.sports||[]).slice(),teams:(P.teams||[]).slice(),players:(P.players||[]).slice(),brands:(P.brands||[]).slice(),min:P.min===undefined?'':P.min,max:P.max===undefined?'':P.max};
+  var BR=['Topps','Panini','Upper Deck','Fleer'];
+  var sugg=[];PEOPLE.forEach(function(q){q.cards.forEach(function(c){sugg.push(c);});});sugg.sort(function(a,b){return b.est-a.est;});
+  var SG=uniq(sugg.map(function(c){return c.player;})).slice(0,12);
+  function tog(a,v){var i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);}
+  function chip(a,v,k){return '<button class="chip'+(a.indexOf(v)>=0?' on':'')+'" data-k="'+k+'" data-v="'+esc(v)+'">'+esc(v)+'</button>';}
+  function draw(){
+    var teams=[];SPORTS.forEach(function(sp){if(!D.sports.length||D.sports.indexOf(sp)>=0)Object.keys(TEAMS[sp]).forEach(function(t){teams.push(t);});});
+    var plist=uniq(D.players.concat(SG));
+    box.innerHTML='<div class="su"><h2>Your interests</h2><p class="lead">Like Tinder, but for collecting. Tell VeriMatch what you collect. It combines your interests, your collection, your wish list and what you like to rank the collectors you will click with.</p>'+
+     '<h5>Sports</h5><div class="chips">'+SPORTS.map(function(x){return chip(D.sports,x,'sports').replace('>'+esc(x)+'<','>'+cap(x)+'<');}).join('')+'</div>'+
+     '<h5>Teams</h5><div class="chips">'+teams.map(function(t){return chip(D.teams,t,'teams');}).join('')+'</div>'+
+     '<h5>Players</h5><div class="chips">'+plist.map(function(t){return chip(D.players,t,'players');}).join('')+'</div><div class="row" style="margin-top:8px"><input id="sup" placeholder="Add a player" maxlength="40"><button class="btn ghost" id="supa">Add</button></div>'+
+     '<h5>Card brands</h5><div class="chips">'+BR.map(function(t){return chip(D.brands,t,'brands');}).join('')+'</div>'+
+     '<h5>Price range</h5><div class="row"><input id="smin" type="number" inputmode="numeric" min="0" placeholder="Min $" value="'+esc(D.min)+'"><span>\u2013</span><input id="smax" type="number" inputmode="numeric" min="0" placeholder="Max $" value="'+esc(D.max)+'"></div>'+
+     '<div class="fbar"><button class="btn ghost" id="sskip">Not now</button><button class="btn" id="ssave">Find my matches</button></div></div>';
+    Array.prototype.forEach.call(box.querySelectorAll('.chip'),function(b){b.onclick=function(){tog(D[b.dataset.k],b.dataset.v);D.min=$('#smin').value;D.max=$('#smax').value;draw();};});
+    $('#supa').onclick=function(){var v=$('#sup').value.trim();if(v&&D.players.indexOf(v)<0)D.players.push(v);D.min=$('#smin').value;D.max=$('#smax').value;draw();};
+    $('#sskip').onclick=function(){S.prefs=Object.assign({},P,{done:true});save();sh.classList.remove('on');updBanner();};
+    $('#ssave').onclick=function(){D.min=$('#smin').value;D.max=$('#smax').value;S.prefs=D;save();sh.classList.remove('on');rebuildDeck();renderDeck();updBanner();};
+  }
+  draw();sh.classList.add('on');box.scrollTop=0;sh.onclick=function(e){if(e.target===sh){sh.classList.remove('on');}};
+}
+function actionSheet(items,red){
+  var sh=$('#fsheet'),box=$('#fbox');
+  box.innerHTML='<div class="asheet">'+items.map(function(t){return '<button>'+esc(t)+'</button>';}).join('')+(red?'<button class="red">'+esc(red)+'</button>':'')+'<button class="cx">Cancel</button></div>';
+  Array.prototype.forEach.call(box.querySelectorAll('button'),function(b){b.onclick=function(){sh.classList.remove('on');};});
+  sh.classList.add('on');sh.onclick=function(e){if(e.target===sh)sh.classList.remove('on');};
+}
+function openListing(x){
+  var pr=$('#prof'),p=x.p,c=x.c;
+  pr.innerHTML='<div class="pf"><div class="top"><button id="lback" aria-label="Back">\u2190</button><strong></strong><button id="ldots" aria-label="More" style="margin:0">\u22EE</button></div><div class="ld"><div class="big">'+cardHTML(c)+'</div><h2>'+esc(c.year+' '+c.set+' '+c.player)+'</h2><div class="gr">'+esc(gl(c.grade))+'</div><div class="pr2">$'+c.est.toLocaleString()+'</div>'+
+   '<button class="by" id="lby"><span>Listed by <b>'+esc(p.name)+'</b> \u00B7 '+esc(p.city)+' \u00B7 view collection</span><span aria-hidden="true">\u203A</span></button>'+
+   '<p class="fine" style="font-size:12px;color:var(--muted)">Sample listing. Prices are illustrative.</p>'+
+   '<div class="bar"><button class="btn cash" id="lcash">Offer cash</button><button class="btn teal" id="lpro">Propose Trade</button></div></div></div>';
+  pr.classList.add('on');pr.scrollTop=0;
+  $('#lback').onclick=function(){pr.classList.remove('on');};
+  $('#ldots').onclick=function(){actionSheet(['Share Listing','Save'],'Report');};
+  $('#lby').onclick=function(){openAll(p);};
+  $('#lpro').onclick=function(){pr.classList.remove('on');tradeOpen[p.id]=true;setTab('matches');openChat(p.id);};
+  $('#lcash').onclick=function(){pr.classList.remove('on');setTab('matches');openChat(p.id);};
+}
+function openAll(p){
+  var pr=$('#prof'),sort=0,SORTS=['Picked for you','Price: High to Low','Interested'],q='';
+  var base=p.cards.slice().sort(function(a,b){return (why(b).length-why(a).length)||(b.est-a.est);});
+  var tr=Math.max(3,Math.round(total(p)/20)),fo=Math.round(total(p)/2.4);
+  function list(){
+    var l=base.filter(function(c){return !q||(c.player+' '+c.team+' '+c.set+' '+c.sport+' '+c.year).toLowerCase().indexOf(q)>=0;});
+    if(sort===0)l=l.slice().sort(function(a,b){return (why(b).length-why(a).length)||(b.est-a.est);});
+    if(sort===1)l=l.slice().sort(function(a,b){return b.est-a.est;});
+    if(sort===2)l=l.filter(isLiked);
+    return l;
+  }
+  function rows(){
+    var l=list();
+    $('#pcount').textContent=l.length+' results';
+    $('#prows').innerHTML=l.length?l.map(function(c){var w=why(c),on=isLiked(c);
+      return '<div class="prow"><div class="th">'+cardHTML(c)+'</div><div class="mid">'+esc(c.year+' '+c.set+' '+c.player)+'<small>'+esc(gl(c.grade))+'</small>'+(w.length?'<span class="why2">'+esc(w.slice(0,2).join(' \u00B7 '))+'</span>':'')+'</div><div class="pr"><span>$'+c.est.toLocaleString()+'</span><button class="heart'+(on?' on':'')+'" data-i="'+base.indexOf(c)+'" aria-label="Show interest" aria-pressed="'+on+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button></div></div>';}).join(''):'<p class="fine" style="padding:16px">'+(sort===2?'No saved cards yet. Tap the heart on any card to save it.':'No matches.')+'</p>';
+    Array.prototype.forEach.call(pr.querySelectorAll('.heart'),function(b){b.onclick=function(){var c=base[+b.dataset.i],k=ck(c),a=S.interest=S.interest||[],j=a.indexOf(k);if(j>=0)a.splice(j,1);else a.push(k);save();rows();};});
+  }
+  pr.innerHTML='<div class="pf"><div class="top"><button id="pback" aria-label="Back">\u2190</button><strong>'+esc(p.name)+'</strong></div>'+
+   '<div class="head">'+avatarSVG(p)+'<div class="stats"><div><b>'+total(p)+'</b><span>Cards</span></div><div><b>'+tr+'</b><span>Trades</span></div><div><b>'+fo+'</b><span>Followers</span></div></div></div>'+
+   '<div class="where">'+esc(p.city)+' \u00B7 sample collector</div>'+
+   '<div class="acts"><button class="btn teal" id="ppro">Propose Trade</button><button class="btn" id="pmsg">Message</button><button class="more3" id="pdots" aria-label="More">\u22EE</button></div>'+
+   '<div class="ptabs"><button class="ptab on" data-pt="0" aria-label="Cards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="3" width="10" height="18" rx="2"/><path d="M18 6v12"/></svg></button><button class="ptab" data-pt="1" aria-label="Preferences"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20l3-12 8-4-3 12z"/></svg></button><button class="ptab" data-pt="2" aria-label="Wishlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h4"/></svg></button><button class="ptab" data-pt="3" aria-label="Trades"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13l-3-3M20 15H7l3 3"/></svg></button></div><div id="pt0">'+
+   '<div class="sbar"><input id="pq" type="search" placeholder="Search\u2026" aria-label="Search this collection"></div>'+
+   '<div class="meta"><b id="pcount"></b><button class="sort" id="psort"></button></div><div id="prows"></div>'+
+   '<p class="fine" style="padding:8px 16px;font-size:12px;color:var(--muted)">Demo data: this prototype includes only '+base.length+' of '+total(p)+' cards.</p></div><div id="ptx"></div></div>';
+  function setSort(){$('#psort').textContent='Sort: '+SORTS[sort];}
+  setSort();rows();pr.classList.add('on');pr.scrollTop=0;
+  $('#pback').onclick=function(){pr.classList.remove('on');};
+  $('#pq').oninput=function(){q=this.value.trim().toLowerCase();rows();};
+  $('#psort').onclick=function(){sort=(sort+1)%SORTS.length;setSort();rows();};
+  $('#pmsg').onclick=function(){pr.classList.remove('on');setTab('matches');openChat(p.id);};
+  function chips(a){return '<div class="chips">'+a.map(function(x){return '<span>'+esc(x)+'</span>';}).join('')+'</div>';}
+  function tabx(n){
+    $('#pt0').style.display='none';var x=$('#ptx');
+    if(n===0){$('#pt0').style.display='';x.innerHTML='';return;}
+    var sp=uniq(p.cards.map(function(c){return cap(c.sport);})),pl=uniq(p.cards.map(function(c){return c.player.toUpperCase();})),tm=uniq(p.cards.map(function(c){return c.team;}));
+    if(n===1)x.innerHTML='<div class="pbox"><h5>Categories</h5>'+chips(sp)+'</div><div class="pbox"><h5>Players</h5>'+chips(pl)+'</div><div class="pbox"><h5>Teams</h5>'+chips(tm)+'</div><p class="fine" style="padding:0 16px;font-size:12px;color:var(--muted)">VeriMatch uses these preferences to find players and teams you have in common.</p>';
+    if(n===2)x.innerHTML='<div class="pbox"><h5>Wishlist</h5>'+chips(p.wants)+'</div>';
+    if(n===3)x.innerHTML='<div class="pbox"><h5>Trades</h5><p class="fine">Trade history is not part of this demo.</p></div>';
+  }
+  Array.prototype.forEach.call(pr.querySelectorAll('.ptab'),function(b){b.onclick=function(){Array.prototype.forEach.call(pr.querySelectorAll('.ptab'),function(o){o.classList.toggle('on',o===b);});tabx(+b.dataset.pt);};});
+  $('#pdots').onclick=function(){actionSheet(['Share Profile Link','Follow','Block','Add a private memo'],'Report');};
+  $('#ppro').onclick=function(){pr.classList.remove('on');tradeOpen[p.id]=true;setTab('matches');openChat(p.id);};
+}
+function showMatch(p){
+  var box=$('#ovbox');
+  box.innerHTML='<h2>It’s a match</h2><div class="pair">'+avatarSVG({name:'You',c1:'#D93A3A',c2:'#C99A2E'})+avatarSVG(p)+'</div>'+
+   '<div>You and '+esc(p.name)+' share an interest in '+esc((common(p).items.slice(0,3).join(', '))||'trading cards')+'. Say hi and compare collections. There is no pressure to trade.</div>'+
+   '<button class="btn hot" id="ovMsg">Send a message</button><button class="btn ghost" id="ovView">View their collection</button><button class="btn ghost" id="ovKeep">Keep swiping</button>';
+  $('#ov').classList.add('on');
+  $('#ovView').onclick=function(){$('#ov').classList.remove('on');openAll(p);};
+  $('#ovKeep').onclick=function(){$('#ov').classList.remove('on');};
+  $('#ovMsg').onclick=function(){$('#ov').classList.remove('on');setTab('matches');openChat(p.id);};
+}
+
+/* matches */
+var openId=null;
+var mtab='turn';
+function fmtT(ts){var d=new Date(ts||Date.now()),h=d.getHours(),m=d.getMinutes(),ap=h>=12?'PM':'AM';h=h%12||12;function z(n){return (n<10?'0':'')+n;}return z(h)+':'+z(m)+' '+ap+' '+z(d.getMonth()+1)+'/'+z(d.getDate())+'/'+d.getFullYear();}
+function proposed(id){return (S.chats[id]||[]).some(function(m){return m.me&&/^Trade proposal/.test(m.t);});}
+function renderMatches(){
+  var v=$('#v-matches');
+  if(openId){renderChat(v);return;}
+  var turn=[],wait=[];
+  S.matches.forEach(function(id){var p=byId(id);if(!p)return;(proposed(id)?wait:turn).push(p);});
+  var tabs=[['turn','Your turn',turn.length],['wait','Waiting',wait.length],['ship','Shipped',0],['fail','Unsuccessful',0]];
+  var ico='<span class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13l-3-3M20 15H7l3 3"/></svg></span>';
+  var h='<div class="thead"><div class="h" style="font-size:34px;margin:0">Trades</div><button class="ib" id="tchat" aria-label="Messages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg></button></div>'+
+   '<div class="ttabs" role="tablist">'+tabs.map(function(t){return '<button role="tab" class="ttab'+(mtab===t[0]?' on':'')+'" data-t="'+t[0]+'">'+t[1]+' ('+t[2]+')</button>';}).join('')+'</div><div class="tlist">';
+  function row(p,kind){
+    var at=fmtT((S.at||{})[p.id]),title=kind==='turn'?'New match: '+esc(p.name):'Offer sent to '+esc(p.name),pill=kind==='turn'?'Matched':'Interest sent',box;
+    if(kind==='turn'){
+      box='<div class="tbox"><div class="tcards">'+ordered(p).slice(0,3).map(function(c){return '<div class="tt">'+cardHTML(c)+'</div>';}).join('')+'</div><div class="tsub">You share: '+esc(common(p).items.slice(0,3).join(', ')||'trading cards')+'</div></div>';
+    }else{
+      var b=tradeIdea(p);
+      box='<div class="tbox">'+(b?'<div class="tlabels"><span>Trade</span><span>For</span></div><div class="tcards"><div class="tt">'+cardHTML(b.g)+'</div><span class="tswap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13l-3-3M20 15H7l3 3"/></svg></span><div class="tt">'+cardHTML(b.r)+'</div></div>':'')+'</div>';
+    }
+    return '<button class="trow" data-id="'+p.id+'">'+ico+'<div class="tbody"><div class="ttop"><span class="ttitle">'+title+'</span><span class="tpill">'+pill+'</span></div><div class="tdate">Received: '+at+'</div>'+box+'</div></button>';
+  }
+  var items=mtab==='turn'?turn.map(function(p){return row(p,'turn');}):mtab==='wait'?wait.map(function(p){return row(p,'wait');}):[];
+  h+=items.length?items.join(''):'<div class="empty" style="padding:40px 16px"><div>'+(mtab==='turn'?'No trade matches yet. Like a collector in VeriMatch. If they like you back, they show up here.':'Nothing here yet.')+'</div></div>';
+  h+='</div>';
+  v.innerHTML=h;
+  Array.prototype.forEach.call(v.querySelectorAll('.ttab'),function(b){b.onclick=function(){mtab=b.dataset.t;renderMatches();};});
+  Array.prototype.forEach.call(v.querySelectorAll('.trow'),function(b){b.onclick=function(){openChat(b.dataset.id);};});
+}
+function openChat(id){openId=id;renderMatches();}
+function tradeHTML(p){
+  var b=tradeIdea(p);if(!b)return '<div class="note">Add cards to your collection to get a suggested trade.</div>';
+  var diff=b.r.est-b.g.est,gap=diff===0?'Even trade, no cash needed':(diff>0?'You add $'+diff+' cash to even it out':p.name.split(' ')[0]+' adds $'+(-diff)+' cash to even it out');
+  return '<div class="trade"><div class="lbl">Suggested trade</div><div class="tr"><div class="tc">'+cardHTML(b.g)+'<span>You give \u00B7 est. $'+b.g.est+'</span></div><div class="arrow" aria-hidden="true">\u21C4</div><div class="tc">'+cardHTML(b.r)+'<span>You get \u00B7 est. $'+b.r.est+'</span></div></div><div class="gap">'+esc(gap)+'</div><button class="btn hot" id="prop">Propose this trade</button><div class="note" style="margin:6px 0 0">Illustrative values, not market prices. In the app, this opens the existing offer flow with these cards and cash prefilled.</div></div>';
+}
+var tradeOpen={};
+function tradeBlock(p){
+  if(!tradeIdea(p))return tradeHTML(p);
+  if(tradeOpen[p.id])return tradeHTML(p).replace('<div class="lbl">Suggested trade</div>','<div class="lbl">Suggested trade \u00B7 optional</div>').replace('<button class="btn hot" id="prop">','<button class="btn ghost" id="tclose">Hide trade idea</button><button class="btn hot" id="prop">');
+  var top=ordered(p).slice(0,3),more=Math.max(total(p)-3,0);
+  return '<div class="cstrip">'+top.map(function(c,i){return '<div class="cs'+(i===2?' last':'')+'">'+cardHTML(c)+(i===2?'<button class="more" id="cmore">'+more+' more \u203A</button>':'')+'</div>';}).join('')+'</div>'+
+   '<div class="note tnote"><span>No trade needed. Browse, chat, or view a trade idea when you are ready.</span></div>'+
+   '<div class="crow"><button class="btn ghost" id="topen">Trade idea</button><button class="btn hot" id="cview">View collection</button></div>';
+}
+function renderChat(v){
+  var p=byId(openId),ch=S.chats[openId]||[];
+  var thumbs=p.cards.map(function(c){return '<div class="tn">'+cardHTML(c)+'</div>';}).join('');
+  v.innerHTML='<div class="chat"><div class="bar"><button class="btn ghost" id="back">Back</button><strong>'+esc(p.name)+'</strong><span class="loc" style="color:var(--muted)">'+esc(p.city)+'</span></div>'+
+   '<div class="note">In common: '+esc(common(p).items.slice(0,5).join(', ')||'trading cards')+'</div>'+tradeBlock(p)+
+   '<div class="msgs" id="msgs">'+(ch.length?'':'<div class="note">Demo chat. Replies are automatic examples, since these collectors are sample profiles.</div>')+
+   ch.map(function(m){return '<div class="msg'+(m.me?' me':'')+'">'+esc(m.t)+'</div>';}).join('')+'</div>'+
+   '<form class="compose" id="cf"><input type="text" id="ci" placeholder="Message '+esc(p.name.split(' ')[0])+'" aria-label="Message" autocomplete="off"><button class="btn hot" type="submit">Send</button></form></div>';
+  $('#back').onclick=function(){openId=null;renderMatches();};
+  var cv=$('#cview'),cm2=$('#cmore');if(cv)cv.onclick=function(){openAll(p);};if(cm2)cm2.onclick=function(){openAll(p);};
+  var to=$('#topen');if(to)to.onclick=function(){tradeOpen[openId]=true;renderChat(v);};
+  var tc=$('#tclose');if(tc)tc.onclick=function(){tradeOpen[openId]=false;renderChat(v);};
+  var pb=$('#prop');
+  if(pb)pb.onclick=function(){
+    var b=tradeIdea(p),diff=b.r.est-b.g.est;
+    var t='Trade proposal: my '+b.g.year+' '+b.g.player+' for your '+b.r.year+' '+b.r.player+(diff===0?', even trade.':(diff>0?', and I add $'+diff+' cash.':', and you add $'+(-diff)+' cash.'));
+    (S.chats[openId]=S.chats[openId]||[]).push({me:true,t:t});save();renderChat(v);
+    var who=openId;
+    setTimeout(function(){(S.chats[who]=S.chats[who]||[]).push({me:false,t:'That could work. Can you send close-up photos of the corners and surface first?'});save();if(openId===who&&tab==='matches')renderChat($('#v-matches'));},900);
+  };
+  var box=$('#msgs');box.scrollTop=box.scrollHeight;
+  $('#cf').onsubmit=function(e){
+    e.preventDefault();var t=$('#ci').value.trim();if(!t)return;
+    (S.chats[openId]=S.chats[openId]||[]).push({me:true,t:t});save();$('#ci').value='';renderChat(v);
+    var who=openId;
+    setTimeout(function(){
+      var pp=byId(who),cc=pp.cards[Math.floor(Math.random()*pp.cards.length)];
+      var replies=['Nice! I’d be into swapping my '+cc.year+' '+cc.player+' for something from your binder.','Hey! Do you have anything from the '+pp.wants[0]+'? That’s what I’m after.','Love it. Want to trade at the next card show? I’m flexible on value.'];
+      (S.chats[who]=S.chats[who]||[]).push({me:false,t:replies[Math.floor(Math.random()*replies.length)]});save();
+      if(openId===who&&tab==='matches')renderChat($('#v-matches'));
+    },900);
+  };
+}
+
+/* binder */
+var pendingImg=null;
+function renderBinder(){
+  var v=$('#v-binder');
+  var sportOpts=SPORTS.map(function(s){return '<option value="'+s+'">'+cap(s)+'</option>';}).join('');
+  var tv=S.mine.reduce(function(a,c){return a+(c.est||0);},0),tvs=tv>=1000?'~$'+(Math.round(tv/100)/10)+'k':'$'+tv;
+  var h='<div class="scroll"><div class="chead"><div class="h" style="font-size:34px;margin:0">Collection</div><div class="csub">'+S.mine.length+' card'+(S.mine.length===1?'':'s')+' \u2022 '+tvs+'</div></div>'+
+  '<div class="sbar2"><input id="bq" type="search" placeholder="Search for card or player name" aria-label="Search your collection"></div>'+
+  '<div class="meta2"><b id="bcount"></b><button class="sort" id="bsort"></button></div><div id="blist"></div>'+
+  '<details class="dt"><summary>VeriMatch interests</summary><div class="note">What you want and follow is how VeriMatch finds shared interests.</div>'+
+  '<div class="form" style="grid-template-columns:1fr"><div><label for="fw">Wish list (teams, years, parallels)</label><input type="text" id="fw" maxlength="120" value="'+esc((S.wants||[]).join(', '))+'" placeholder="e.g. LA Lakers, 2023, silver"></div></div>'+
+  '<div class="form" style="grid-template-columns:1fr"><div><label for="flp">Players I follow</label><input type="text" id="flp" maxlength="160" value="'+esc(((S.likes||{}).players||[]).join(', '))+'" placeholder="e.g. Shohei Ohtani, Lionel Messi"></div><div><label for="flt">Teams I follow</label><input type="text" id="flt" maxlength="160" value="'+esc(((S.likes||{}).teams||[]).join(', '))+'" placeholder="e.g. LA Lakers, NY Yankees"></div></div>'+
+  '</details><details class="dt" id="adddet"><summary>Add a card</summary><form class="form" id="addf">'+
+   '<div class="full"><label for="fp">Player</label><input type="text" id="fp" required maxlength="40" placeholder="Player name"></div>'+
+   '<div><label for="fs">Sport</label><select id="fs">'+sportOpts+'</select></div>'+
+   '<div><label for="fy">Year</label><input type="number" id="fy" min="1900" max="2100" value="2023"></div>'+
+   '<div class="full"><label for="fset">Set and team</label><input type="text" id="fset" maxlength="50" placeholder="e.g. Court Kings Rookie"></div>'+
+   '<div><label for="fg">Grade</label><input type="text" id="fg" maxlength="6" placeholder="PSA 9, BGS 9.5, Raw"></div>'+
+   '<div><label for="fe">Est. value ($)</label><input type="number" id="fe" min="0" value="0"></div>'+
+   '<div class="full"><label for="fi">Photo (optional)</label><input type="file" id="fi" accept="image/*"></div>'+
+   '<button class="btn hot full" type="submit">Add to collection</button></form></details>'+
+  '<p class="note" style="margin-top:14px">Cards marked Sample are placeholders. Sets and players are real products, but collectors, grades and values are made up. These cards are what other collectors see when they tap through your VeriMatch profile. In this demo, other collectors are sample profiles.</p></div>';
+  v.innerHTML=h;
+  pendingImg=null;
+  $('#fw').onchange=function(){S.wants=this.value.split(',').map(function(x){return x.trim();}).filter(Boolean);save();};
+  function lst(el){return el.value.split(',').map(function(x){return x.trim();}).filter(Boolean);}
+  $('#flp').onchange=function(){S.likes=S.likes||{};S.likes.players=lst(this);save();};
+  $('#flt').onchange=function(){S.likes=S.likes||{};S.likes.teams=lst(this);save();};
+  $('#fi').onchange=function(e){
+    var f=e.target.files&&e.target.files[0];if(!f)return;
+    var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){
+      var max=520,sc=Math.min(1,max/Math.max(im.width,im.height)),cv=document.createElement('canvas');
+      cv.width=Math.round(im.width*sc);cv.height=Math.round(im.height*sc);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+      pendingImg=cv.toDataURL('image/jpeg',.8);};im.src=r.result;};r.readAsDataURL(f);
+  };
+  $('#addf').onsubmit=function(e){
+    e.preventDefault();
+    var c={id:'u'+Date.now(),player:$('#fp').value.trim(),sport:$('#fs').value,team:'My team',year:+$('#fy').value||2023,set:$('#fset').value.trim()||'Base set',num:Math.floor(Math.random()*90)+1,grade:$('#fg').value.trim()||'Raw',fx:'base',est:+$('#fe').value||0};
+    if(pendingImg)c.img=pendingImg;
+    S.mine.unshift(c);save();renderBinder();
+  };
+  var bs=0,bq='',BS=['Price: High to Low','Price: Low to High','Newest added'];
+  function blist(){
+    var idx=S.mine.map(function(c,i){return i;}).filter(function(i){var c=S.mine[i];return !bq||(c.player+' '+c.team+' '+c.set+' '+c.year).toLowerCase().indexOf(bq)>=0;});
+    if(bs===0)idx.sort(function(a,b){return S.mine[b].est-S.mine[a].est;});
+    if(bs===1)idx.sort(function(a,b){return S.mine[a].est-S.mine[b].est;});
+    $('#bcount').textContent=idx.length+' result'+(idx.length===1?'':'s');$('#bsort').textContent='Sort: '+BS[bs];
+    $('#blist').innerHTML=idx.length?idx.map(function(i){var c=S.mine[i];return '<div class="prow"><div class="th">'+cardHTML(c)+'</div><div class="mid">'+esc(c.year+' '+c.set+' '+c.player)+(c.sample?' <span class="tag2">SAMPLE</span>':'')+'<small>'+esc(gl(c.grade))+'</small></div><div class="pr"><span>$'+(c.est||0).toLocaleString()+'</span><button class="x2" data-i="'+i+'" aria-label="Remove card">\u00D7</button></div></div>';}).join(''):'<p class="fine" style="padding:16px">No cards found.</p>';
+    Array.prototype.forEach.call(v.querySelectorAll('.x2'),function(b){b.onclick=function(){S.mine.splice(+b.dataset.i,1);save();renderBinder();};});
+  }
+  blist();
+  $('#bq').oninput=function(){bq=this.value.trim().toLowerCase();blist();};
+  $('#bsort').onclick=function(){bs=(bs+1)%BS.length;blist();};
+}
+
+/* tabs */
+var tab='discover';
+var hseg='feed';
+function iconsFor(){return {feed:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h4"/>',groups:'<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5"/>',events:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',lead:'<path d="M5 20V10h4v10M10 20V4h4v16M15 20v-7h4v7"/>'};}
+function renderHome(){
+  var v=$('#v-home'),I=iconsFor();
+  var L=[['feed','Feed'],['groups','Groups'],['events','Events'],['lead','Leaderboard']];
+  var h='<div class="segs">'+L.map(function(x){return '<button class="seg'+(hseg===x[0]?' on':'')+'" data-h="'+x[0]+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+I[x[0]]+'</svg>'+x[1]+'</button>';}).join('')+'</div><div class="sx">';
+  if(hseg==='feed'){
+    h+='<div class="hdark"><h4>New: VeriMatch</h4><p>Find collectors who share your players and teams, chat first, and trade only if it makes sense. Start from a person instead of a search.</p><button class="btn" id="hvm">Try VeriMatch</button></div>';
+    [PEOPLE[0],PEOPLE[5]].forEach(function(p,k){var cs=ordered(p);
+      h+='<div class="hpost"><div class="hh">'+avatarSVG(p)+'<b>'+esc(p.name)+' • Rising Star</b><small>'+(k?'2m':'12m')+' ago</small></div><div class="hs"><div class="tt">'+cardHTML(cs[0])+'</div><div class="tt">'+cardHTML(cs[1])+'</div></div><h4>Looking to Move Cards</h4><p>'+esc(cs[0].player+' and '+cs[1].player+' available. Open to offers.')+'</p><div class="pbtns"><button class="btn teal" data-pro="'+p.id+'">Propose Trade</button><button class="btn" data-msg="'+p.id+'">Message</button></div></div>';});
+  }else if(hseg==='groups'){
+    [['🏀','Basketball','Prizm, Chrome and rookies.','603'],['⚾','Baseball','Vintage, junk wax and modern.','541'],['🏒','Hockey','Young Guns and beyond.','212'],['⚽','Soccer','Chrome, Prizm and Topps Now.','188']].forEach(function(g){h+='<div class="hrow2"><div class="gi">'+g[0]+'</div><div class="gt"><b>'+g[1]+'</b><span>'+g[2]+' · '+g[3]+' members</span></div><button class="btn">Join</button></div>';});
+  }else if(hseg==='events'){
+    h+='<p class="fine" style="text-align:center;margin:4px 0 10px">Upcoming Shows</p>';
+    [['Nov 13th – Nov 15th','Dallas Card Show, Chicago','Schaumburg Convention Center','102'],['Nov 21st – Nov 22nd','Collect-A-Con, New Jersey','New Jersey Expo Center','94'],['Dec 19th – Dec 20th','Collect-A-Con, Los Angeles','Los Angeles Convention Center','57']].forEach(function(e){h+='<div class="ev"><small><span>'+e[0]+'</span><b style="font-size:13px;margin:0;display:inline">Join Now ›</b></small><b>'+e[1]+'</b><span>'+e[2]+'</span><br><span>+ '+e[3]+' users are attending</span></div>';});
+    h+='<p class="fine" style="margin:12px 0">Going to a show? VeriMatch can show you who will be there and which of your cards they want.</p>';
+  }else{
+    PEOPLE.slice().sort(function(a,b){return total(b)-total(a);}).forEach(function(p,k){h+='<div class="lb"><em>'+(k+1)+'</em>'+avatarSVG(p)+'<div><b>'+esc(p.name)+'</b><span>'+Math.round(total(p)*1.3)+' trades</span></div></div>';});
+  }
+  h+='</div>';
+  v.innerHTML=h;
+  Array.prototype.forEach.call(v.querySelectorAll('[data-h]'),function(b){b.onclick=function(){hseg=b.dataset.h;renderHome();};});
+  var vm=$('#hvm');if(vm)vm.onclick=function(){sseg='vm';setTab('discover');};
+  Array.prototype.forEach.call(v.querySelectorAll('[data-pro]'),function(b){b.onclick=function(){tradeOpen[b.dataset.pro]=true;setTab('matches');openChat(b.dataset.pro);};});
+  Array.prototype.forEach.call(v.querySelectorAll('[data-msg]'),function(b){b.onclick=function(){setTab('matches');openChat(b.dataset.msg);};});
+}
+var sseg='vm',SAVED=false,FQ='',PQ='';
+var F={sort:0,min:'',max:'',year:0,grader:0,cat:0,mfr:0};
+var FOPT={sort:['Newest to Oldest','Price: High to Low','Price: Low to High'],year:['Any','2020s','2010s','Before 2010'],grader:['All','PSA','BGS'],cat:['All'].concat(SPORTS.map(cap)),mfr:['All','Topps','Panini','Upper Deck','Fleer','Other']};
+var FLAB={sort:'Sort by',year:'Year',grader:'Grader & Grade',cat:'Category',mfr:'Card Manufacturer'};
+function fcount(){return ['year','grader','cat','mfr'].filter(function(k){return F[k]>0;}).length+(F.sort>0?1:0)+((F.min!==''||F.max!=='')?1:0);}
+function segsHTML(){
+  var I={cards:'<path d="M8 4h9a2 2 0 012 2v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z"/><path d="M3 8v8"/>',partners:'<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c0-3 2.500-5 5-5s5 2 5 5M11 19c0-3 2.500-5 5-5s5 2 5 5"/>',vm:'<rect x="5" y="3" width="14" height="18" rx="2.500"/><path d="M9 9h6M9 13h4"/>'};
+  var L=[['cards','Cards'],['partners','Trading Partners'],['vm','VeriMatch']];
+  return L.map(function(x){return '<button class="seg'+(sseg===x[0]?' on':'')+'" data-seg="'+x[0]+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+I[x[0]]+'</svg>'+x[1]+(x[0]==='vm'?'<span class="new">NEW</span>':'')+'</button>';}).join('');
+}
+function bindSegs(root){Array.prototype.forEach.call(root.querySelectorAll('.seg'),function(b){b.onclick=function(){sseg=b.dataset.seg;setTab('discover');};});}
+function money(n){return n>=1e6?'$'+(Math.round(n/1e5)/10)+'m':n>=1e3?'$'+(Math.round(n/100)/10)+'k':'$'+n;}
+function listings(){
+  var out=[],mx=0;PEOPLE.forEach(function(p){mx=Math.max(mx,p.cards.length);});
+  for(var k=0;k<mx;k++)PEOPLE.forEach(function(p){if(p.cards[k])out.push({p:p,c:p.cards[k],n:out.length});});
+  return out;
+}
+function mfrOf(c){var t=c.set;return /Topps/.test(t)?'Topps':/Panini/.test(t)?'Panini':/Upper Deck/.test(t)?'Upper Deck':/Fleer/.test(t)?'Fleer':'Other';}
+function renderSearch(){
+  var v=$('#v-search');
+  var h='<div class="segs">'+segsHTML()+'</div><div class="sx" id="sx">';
+  if(sseg==='cards'){
+    h+='<div class="srow"><input id="fq" type="search" placeholder="Search for card or player name" aria-label="Search cards" value="'+esc(FQ)+'"><button class="fbtn" id="fopen" aria-label="Sort and filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h5M13 8h7M4 16h9M17 16h3"/><circle cx="11" cy="8" r="2"/><circle cx="15" cy="16" r="2"/></svg>'+(fcount()?'<i>'+fcount()+'</i>':'')+'</button></div>'+
+     '<button class="savedp'+(SAVED?' on':'')+'" id="savedp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h12v17l-6-4-6 4z"/></svg>Saved</button>'+
+     '<div class="shead"><div class="h">Recent Listings</div><span id="lc"></span></div><div id="lrows"></div>';
+  }else{
+    h+='<div class="srow"><input id="pq" type="search" placeholder="Search user preferences…" aria-label="Search collectors" value="'+esc(PQ)+'"></div><p style="color:var(--muted);font-size:17px;line-height:1.4;margin:16px 0 4px">Find traders who collect certain players or types of cards</p><div class="shead" style="padding-top:12px"><b style="font-family:var(--display);font-size:24px" id="pc"></b></div><div id="prows"></div>';
+  }
+  h+='</div>';
+  v.innerHTML=h;bindSegs(v);
+  if(sseg==='cards'){
+    $('#fq').oninput=function(){FQ=this.value.trim().toLowerCase();drawListings();};
+    $('#fopen').onclick=openFilter;
+    $('#savedp').onclick=function(){SAVED=!SAVED;this.classList.toggle('on',SAVED);drawListings();};
+    drawListings();
+  }else{
+    $('#pq').oninput=function(){PQ=this.value.trim().toLowerCase();drawPartners();};
+    drawPartners();
+  }
+}
+function drawListings(){
+  var l=listings().filter(function(x){var c=x.c;
+    if(FQ&&(c.player+' '+c.team+' '+c.set+' '+c.sport+' '+c.year).toLowerCase().indexOf(FQ)<0)return false;
+    if(SAVED&&!isLiked(c))return false;
+    if(F.min!==''&&c.est<+F.min)return false;if(F.max!==''&&c.est>+F.max)return false;
+    if(F.year===1&&c.year<2020)return false;if(F.year===2&&(c.year<2010||c.year>2019))return false;if(F.year===3&&c.year>=2010)return false;
+    if(F.grader>0&&gl(c.grade).indexOf(FOPT.grader[F.grader])!==0)return false;
+    if(F.cat>0&&c.sport!==SPORTS[F.cat-1])return false;
+    if(F.mfr>0&&mfrOf(c)!==FOPT.mfr[F.mfr])return false;
+    return true;});
+  if(F.sort===1)l.sort(function(a,b){return b.c.est-a.c.est;});if(F.sort===2)l.sort(function(a,b){return a.c.est-b.c.est;});
+  $('#lc').textContent=l.length+' results';
+  $('#lrows').innerHTML=l.length?l.map(function(x,i){return '<button class="lrow" data-i="'+i+'"><div class="li">'+cardHTML(x.c)+'</div><div class="lt">'+(x.n<4?'<span class="nb">NEW</span><br>':'')+'<div class="ln">'+esc(x.c.year+' '+x.c.set+' '+x.c.player)+'</div><div class="lp">$'+x.c.est.toLocaleString()+'</div></div></button>';}).join(''):'<p class="fine" style="padding:16px 0">No listings match. Try clearing filters.</p>';
+  Array.prototype.forEach.call(document.querySelectorAll('#lrows .lrow'),function(b){b.onclick=function(){openListing(l[+b.dataset.i]);};});
+}
+function drawPartners(){
+  var l=PEOPLE.filter(function(p){return !PQ||(p.name+' '+p.city+' '+p.focus.join(' ')+' '+p.wants.join(' ')+' '+p.cards.map(function(c){return c.player+' '+c.team+' '+c.set;}).join(' ')).toLowerCase().indexOf(PQ)>=0;});
+  l.sort(function(a,b){return (common(b).score-common(a).score);});
+  $('#pc').textContent=l.length+' results';
+  $('#prows').innerHTML=l.map(function(p){var cs=ordered(p),val=Math.round(p.cards.reduce(function(a,c){return a+c.est;},0)*total(p)/p.cards.length);
+    return '<div class="ptr"><div class="ph"><div class="pa">'+avatarSVG(p)+'<b>'+esc(p.name)+'</b></div><em>Collection: '+money(val)+'</em></div><div class="pstrip"><div class="pt">'+cardHTML(cs[0])+'</div><div class="pt">'+cardHTML(cs[1])+'</div><div class="pt">'+cardHTML(cs[2])+'<button class="more" data-id="'+p.id+'">'+(total(p)-2)+' More ›</button></div></div><div class="pbtns"><button class="btn teal" data-pro="'+p.id+'">Propose Trade</button><button class="btn" data-msg="'+p.id+'">Message</button></div></div>';}).join('')||'<p class="fine">No collectors match.</p>';
+  var R=$('#prows');
+  Array.prototype.forEach.call(R.querySelectorAll('.more'),function(b){b.onclick=function(){openAll(byId(b.dataset.id));};});
+  Array.prototype.forEach.call(R.querySelectorAll('[data-pro]'),function(b){b.onclick=function(){tradeOpen[b.dataset.pro]=true;setTab('matches');openChat(b.dataset.pro);};});
+  Array.prototype.forEach.call(R.querySelectorAll('[data-msg]'),function(b){b.onclick=function(){setTab('matches');openChat(b.dataset.msg);};});
+}
+function openFilter(){
+  var sh=$('#fsheet'),box=$('#fbox'),D=JSON.parse(JSON.stringify(F));
+  function draw(){
+    box.innerHTML='<div class="fhead"><span>Sort & Filter</span><button id="fcan">Cancel</button></div>'+'<div class="frow" style="cursor:default"><label for="fmin">Min – Max Price</label><span style="display:flex;gap:6px;align-items:center"><input id="fmin" type="number" inputmode="numeric" min="0" placeholder="Min $" value="'+esc(D.min)+'" style="width:84px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit"> – <input id="fmax" type="number" inputmode="numeric" min="0" placeholder="Max $" value="'+esc(D.max)+'" style="width:84px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit"></span></div>'+Object.keys(FLAB).map(function(k){return '<button class="frow" data-k="'+k+'">'+FLAB[k]+'<span>'+esc(FOPT[k][D[k]])+' ›</span></button>';}).join('')+'<div class="fbar"><button class="btn ghost" id="fclr">Clear</button><button class="btn" id="fapp">Apply</button></div>';
+    Array.prototype.forEach.call(box.querySelectorAll('.frow'),function(b){b.onclick=function(){var k=b.dataset.k;D[k]=(D[k]+1)%FOPT[k].length;draw();};});
+    $('#fcan').onclick=function(){sh.classList.remove('on');};
+    $('#fmin').oninput=function(){D.min=this.value;};$('#fmax').oninput=function(){D.max=this.value;};
+    $('#fclr').onclick=function(){Object.keys(D).forEach(function(k){D[k]=(k==='min'||k==='max')?'':0;});draw();};
+    $('#fapp').onclick=function(){F=D;sh.classList.remove('on');renderSearch();};
+  }
+  draw();sh.classList.add('on');box.scrollTop=0;sh.onclick=function(e){if(e.target===sh)sh.classList.remove('on');};
+}
+function setTab(t){
+  tab=t;
+  Array.prototype.forEach.call(document.querySelectorAll('nav button'),function(b){b.classList.toggle('on',b.dataset.tab===t&&!b.classList.contains('plus'));});
+  var vid=(t==='discover'&&sseg!=='vm')?'search':t;
+  Array.prototype.forEach.call(document.querySelectorAll('.view'),function(v){v.classList.toggle('on',v.id==='v-'+vid);});
+  if(t==='discover'){if(sseg==='vm'){$('#segsvm').innerHTML=segsHTML();bindSegs($('#segsvm'));updBanner();}else renderSearch();}
+  if(t==='home')renderHome();
+  if(t==='matches')renderMatches();
+  if(t==='binder')renderBinder();
+  if(t==='discover'){rebuildDeck();renderDeck();}
+  renderTabs();
+}
+function renderTabs(){
+  var b=$('#badge');b.textContent=S.matches.length;b.hidden=!S.matches.length;
+}
+Array.prototype.forEach.call(document.querySelectorAll('nav button'),function(b){b.onclick=function(){if(b.dataset.tab!=='matches')openId=null;setTab(b.dataset.tab);if(b.dataset.add){var dd=$('#adddet');if(dd)dd.open=true;var f=$('#fp');if(f){f.scrollIntoView({block:'center'});f.focus();}}};});
+$('#chatbtn').onclick=function(){openId=null;setTab('matches');};
+$('#menu').onclick=function(){$('#sheet').classList.add('on');$('#sheetClose').focus({preventScroll:true});$('#sheet .sheetbox').scrollTop=0;};
+$('#sheetClose').onclick=function(){$('#sheet').classList.remove('on');};
+$('#sheet').onclick=function(e){if(e.target===this)this.classList.remove('on');};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')$('#sheet').classList.remove('on');});
+rebuildDeck();renderDeck();renderTabs();
+$('#segsvm').innerHTML=segsHTML();bindSegs($('#segsvm'));updBanner();
+})();
+</script>
