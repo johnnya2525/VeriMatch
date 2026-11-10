@@ -70,7 +70,7 @@ main{flex:1;min-height:0;position:relative}
 .rb{width:62px;height:62px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;transition:transform .12s}
 .rb:active{transform:scale(.92)}
 .rb svg{width:28px;height:28px}
-.rb.no{color:var(--muted)}
+.rb.no{color:var(--muted)}.rb.undo{width:46px;height:46px;align-self:center;color:var(--muted)}.rb.undo svg{width:22px;height:22px}.rb.undo[disabled]{opacity:.35}
 .rb.yes{background:var(--hot);border-color:var(--hot);color:var(--hot-ink)}
 .hsearch{padding:14px 16px 0}.hsearch input{width:100%;box-sizing:border-box;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px 14px;font:inherit;font-size:15px}
 .hnote{margin:10px 16px 0;padding:12px 14px;border-radius:12px;background:var(--surface2);font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;justify-content:space-between}.hnote b{color:var(--ink)}.hnote button{flex:none;border:0;border-radius:999px;background:var(--ink);color:var(--bg);font:inherit;font-weight:600;font-size:13px;padding:8px 14px;cursor:pointer}
@@ -190,7 +190,7 @@ input[type=text],input[type=number],select{width:100%;min-width:0;padding:10px 1
 .sheetbox ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;line-height:1.45}
 .pcard.cslide .cap{padding-right:118px}.seeall{position:absolute;right:12px;left:auto;top:auto;bottom:14px;z-index:5;border:0;border-radius:999px;padding:6px 12px;background:rgba(10,8,14,.72);color:#fff;font-size:12px;font-weight:600}
 .allslide{position:absolute;z-index:5;left:0;right:0;top:46%;transform:translateY(-50%);text-align:center;color:#fff;padding:0 24px;display:flex;flex-direction:column;align-items:center;gap:8px}
-.allslide .big{font-family:var(--display);font-weight:700;font-size:96px;line-height:1}
+.allslide{pointer-events:none}.allslide .btn{pointer-events:auto}.allslide .big{font-family:var(--display);font-weight:700;font-size:96px;line-height:1}
 .fchips{display:flex;flex-wrap:wrap;gap:6px}
 .fchip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px}
 .fchip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -247,7 +247,6 @@ nav button.on svg{color:var(--hot)}
 </head>
 <body>
 
-
 <div class="app">
   <header class="top"><button class="ib" id="menu" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div class="brand" aria-hidden="true"></div><button class="ib" id="chatbtn" aria-label="Messages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg></button></header>
   <div class="concept">Concept mockup · sample data · tap the menu icon for the pitch</div>
@@ -258,6 +257,7 @@ nav button.on svg{color:var(--hot)}
       <button class="vmban" id="vmban"></button>
       <div class="deck" id="deck"></div>
       <div class="actions" id="actions">
+        <button class="rb undo" id="btnUndo" aria-label="Undo last swipe" title="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
         <button class="rb no" id="btnNo" aria-label="Pass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         <button class="rb yes" id="btnYes" aria-label="Like"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
       </div>
@@ -442,7 +442,7 @@ function renderDeck(){
   if(!deckPeople.length){
     acts.style.display='none';
     deck.innerHTML='<div class="empty"><h2>You’re caught up</h2><div>You’ve gone through all the demo collectors. New people would appear here as they join.</div><button class="btn hot" id="again">Start over</button></div>';
-    $('#again').onclick=function(){S.liked=[];S.passed=[];S.matches=[];S.chats={};save();rebuildDeck();renderDeck();renderTabs();};
+    $('#again').onclick=function(){S.liked=[];S.passed=[];S.matches=[];S.chats={};S.hist=[];save();rebuildDeck();renderDeck();renderTabs();};
     return;
   }
   acts.style.display='flex';
@@ -506,13 +506,16 @@ function decide(p,yes){
   var el=$('.pcard:not(.back)',$('#deck'));
   if(el){el.style.transition='transform .25s,opacity .25s';el.style.transform='translateX('+(yes?520:-520)+'px) rotate('+(yes?24:-24)+'deg)';el.style.opacity='0';}
   setTimeout(function(){
-    if(yes){S.liked.push(p.id);if(p.likesYou&&S.matches.indexOf(p.id)<0){S.matches.push(p.id);S.chats[p.id]=[];S.at=S.at||{};S.at[p.id]=Date.now();showMatch(p);}}
+    S.hist=S.hist||[];var newM=false;
+    if(yes){S.liked.push(p.id);if(p.likesYou&&S.matches.indexOf(p.id)<0){newM=true;S.matches.push(p.id);S.chats[p.id]=[];S.at=S.at||{};S.at[p.id]=Date.now();showMatch(p);}}
     else S.passed.push(p.id);
+    S.hist.push({id:p.id,yes:yes,m:newM});
     save();rebuildDeck();renderDeck();renderTabs();
   },230);
 }
 $('#btnYes').onclick=function(){if(deckPeople[0])decide(deckPeople[0],true);};
 $('#btnNo').onclick=function(){if(deckPeople[0])decide(deckPeople[0],false);};
+$('#btnUndo').onclick=function(){var h=(S.hist||[]).pop();if(!h)return;var i=S.liked.indexOf(h.id);if(i>=0)S.liked.splice(i,1);i=S.passed.indexOf(h.id);if(i>=0)S.passed.splice(i,1);if(h.m&&!(S.chats[h.id]&&S.chats[h.id].length)){i=S.matches.indexOf(h.id);if(i>=0)S.matches.splice(i,1);delete S.chats[h.id];}save();rebuildDeck();renderDeck();renderTabs();};
 
 /* match overlay */
 function openAllOld(p){
