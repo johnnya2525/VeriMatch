@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>VeriMatch</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
@@ -239,6 +244,9 @@ nav button.on svg{color:var(--hot)}
 @media (max-height:760px){.concept{display:none}.vmban{display:none}}
 @media (max-height:640px){.rb{width:52px;height:52px}.actions{padding:8px 0 2px}}
 </style>
+</head>
+<body>
+
 
 <div class="app">
   <header class="top"><button class="ib" id="menu" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div class="brand" aria-hidden="true"></div><button class="ib" id="chatbtn" aria-label="Messages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg></button></header>
@@ -902,3 +910,6 @@ rebuildDeck();renderDeck();renderTabs();
 $('#segsvm').innerHTML=segsHTML();bindSegs($('#segsvm'));updBanner();
 })();
 </script>
+
+</body>
+</html>
