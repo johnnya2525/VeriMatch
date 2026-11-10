@@ -372,7 +372,9 @@ function common(p){
   var pl=inter(A.players,B.players),tm=inter(A.teams,B.teams),sp=inter(A.sports,B.sports);
   var br=inter(P.brands||[],uniq(p.cards.map(mfrOf))),pf=0;
   if(P.min!==''||P.max!==''){pf=p.cards.filter(function(c){return (P.min===''||c.est>=+P.min)&&(P.max===''||c.est<=+P.max);}).length;}
-  return {players:pl,teams:tm,sports:sp,brands:br,priceFit:pf,items:pl.concat(tm,sp,br),score:pl.length*3+tm.length*2+sp.length+br.length+Math.min(pf,3)};
+  var gm=P.grade===undefined||P.grade===''?'':+P.grade,gf=0,gi=[];
+  if(gm!==''){gf=p.cards.filter(function(c){var g=parseFloat((String(c.grade).match(/[\d.]+/)||[''])[0]);return !isNaN(g)&&g>=gm;}).length;if(gf)gi=[gm===10?'Grade 10 cards':'Grade '+gm+'+ cards'];}
+  return {players:pl,teams:tm,sports:sp,brands:br,priceFit:pf,gradeFit:gf,items:pl.concat(tm,sp,br,gi),score:pl.length*3+tm.length*2+sp.length+br.length+Math.min(pf,3)+Math.min(gf,3)};
 }
 function lc(x){return String(x).toLowerCase();}
 function ck(c){return c.player+'|'+c.year+'|'+c.set;}
@@ -543,13 +545,13 @@ function openAllOld(p){
   sh.onclick=function(e){if(e.target===sh)sh.classList.remove('on');};
 }
 function updBanner(){
-  var P=S.prefs||{},n=(P.sports||[]).length+(P.teams||[]).length+(P.players||[]).length+(P.brands||[]).length;
+  var P=S.prefs||{},n=(P.sports||[]).length+(P.teams||[]).length+(P.players||[]).length+(P.brands||[]).length+(P.grade?1:0);
   var b=$('#vmban');if(!b)return;
   b.innerHTML='<span>'+(n?'Matches use your '+n+' interests and collection.':'Set your interests for better matches.')+'</span><b>'+(n?'Edit':'Set up')+' \u203A</b>';
   b.onclick=openSetup;
 }
 function openSetup(){
-  var sh=$('#fsheet'),box=$('#fbox'),P=S.prefs||{},D={done:true,sports:(P.sports||[]).slice(),teams:(P.teams||[]).slice(),players:(P.players||[]).slice(),brands:(P.brands||[]).slice(),min:P.min===undefined?'':P.min,max:P.max===undefined?'':P.max};
+  var sh=$('#fsheet'),box=$('#fbox'),P=S.prefs||{},D={done:true,sports:(P.sports||[]).slice(),teams:(P.teams||[]).slice(),players:(P.players||[]).slice(),brands:(P.brands||[]).slice(),grade:P.grade||'',min:P.min===undefined?'':P.min,max:P.max===undefined?'':P.max};
   var BR=['Topps','Panini','Upper Deck','Fleer'];
   var sugg=[];PEOPLE.forEach(function(q){q.cards.forEach(function(c){sugg.push(c);});});sugg.sort(function(a,b){return b.est-a.est;});
   var SG=uniq(sugg.map(function(c){return c.player;})).slice(0,12);
@@ -563,9 +565,11 @@ function openSetup(){
      '<h5>Teams</h5><div class="chips">'+teams.map(function(t){return chip(D.teams,t,'teams');}).join('')+'</div>'+
      '<h5>Players</h5><div class="chips">'+plist.map(function(t){return chip(D.players,t,'players');}).join('')+'</div><div class="row" style="margin-top:8px"><input id="sup" placeholder="Add a player" maxlength="40"><button class="btn ghost" id="supa">Add</button></div>'+
      '<h5>Card brands</h5><div class="chips">'+BR.map(function(t){return chip(D.brands,t,'brands');}).join('')+'</div>'+
+     '<h5>Card grade</h5><div class="chips">'+[['','Any'],['8','8+'],['9','9+'],['9.5','9.5+'],['10','10']].map(function(g){return '<button class="chip'+(String(D.grade)===g[0]?' on':'')+'" data-g="'+g[0]+'">'+g[1]+'</button>';}).join('')+'</div>'+
      '<h5>Price range</h5><div class="row"><input id="smin" type="number" inputmode="numeric" min="0" placeholder="Min $" value="'+esc(D.min)+'"><span>\u2013</span><input id="smax" type="number" inputmode="numeric" min="0" placeholder="Max $" value="'+esc(D.max)+'"></div>'+
      '<div class="fbar"><button class="btn ghost" id="sskip">Not now</button><button class="btn" id="ssave">Find my matches</button></div></div>';
-    Array.prototype.forEach.call(box.querySelectorAll('.chip'),function(b){b.onclick=function(){tog(D[b.dataset.k],b.dataset.v);D.min=$('#smin').value;D.max=$('#smax').value;draw();};});
+    Array.prototype.forEach.call(box.querySelectorAll('.chip[data-g]'),function(b){b.onclick=function(){D.grade=b.dataset.g;D.min=$('#smin').value;D.max=$('#smax').value;draw();};});
+    Array.prototype.forEach.call(box.querySelectorAll('.chip[data-k]'),function(b){b.onclick=function(){tog(D[b.dataset.k],b.dataset.v);D.min=$('#smin').value;D.max=$('#smax').value;draw();};});
     $('#supa').onclick=function(){var v=$('#sup').value.trim();if(v&&D.players.indexOf(v)<0)D.players.push(v);D.min=$('#smin').value;D.max=$('#smax').value;draw();};
     $('#sskip').onclick=function(){S.prefs=Object.assign({},P,{done:true});save();sh.classList.remove('on');updBanner();};
     $('#ssave').onclick=function(){D.min=$('#smin').value;D.max=$('#smax').value;S.prefs=D;save();sh.classList.remove('on');rebuildDeck();renderDeck();updBanner();};
